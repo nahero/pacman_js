@@ -31,12 +31,16 @@
   background-color: gold;
   border-radius: 10px;
 }
+.pacman-deceased {
+  background-color: black;
+  border-radius: 0 !important;
+}
 
 .ghost {
   border-radius: 10px;
   border: 0;
 }
-.scared-ghost {
+.ghost.scared-ghost {
   background-color: aquamarine;
 }
 

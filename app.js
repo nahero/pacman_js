@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let score = 0;
   scoreDisplay.innerText = score;
 
+  const pacdotDisplay = document.getElementById('pacdotNumber');
+  let pacdotNumber = 0;
+
   const width = 28; // 28 x 28 = 784
 
   //  LAYOUT
@@ -43,6 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2 - ghost-lair
   // 3 - power-pellet
   // 4 - empty
+
+  layout.forEach((element) => {
+    if (element === 0) {
+      pacdotNumber++;
+    }
+  });
+  pacdotDisplay.innerText = pacdotNumber;
 
   const squares = [];
 
@@ -119,6 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     squares[pacmanCurrentIndex].classList.add('pacman');
     pacdotEaten(pacmanCurrentIndex);
+    powerPelletEaten(pacmanCurrentIndex);
+
     e.preventDefault();
   }
 
@@ -139,7 +151,32 @@ document.addEventListener('DOMContentLoaded', () => {
       squares[currentIndex].classList.remove('pac-dot');
       score++;
       scoreDisplay.innerText = score;
+      pacdotNumber--;
+      pacdotDisplay.innerText = pacdotNumber;
+      if (pacdotNumber === 0) {
+        victory();
+      }
     }
+  }
+
+  // POWER-PELLET EATEN
+  function powerPelletEaten(currentIndex) {
+    if (squares[currentIndex].classList.contains('power-pellet')) {
+      squares[currentIndex].classList.remove('power-pellet');
+      score += 10;
+      scaredGhostsToggle(true);
+      setTimeout(() => {
+        scaredGhostsToggle(false);
+      }, 10000);
+    }
+  }
+
+  // TOGGLE SCARED GHOSTS
+  // send status as true or false = scare or unscare
+  function scaredGhostsToggle(status) {
+    ghosts.forEach((ghost) => {
+      ghost.isScared = status;
+    });
   }
 
   document.addEventListener('keyup', movePacman);
@@ -152,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
       this.speed = speed;
       this.currentIndex = startIndex;
       this.timerId = NaN;
+      this.isScared = false;
     }
   }
 
@@ -168,9 +206,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // MOVE GHOSTS
-  // ghosts.forEach((ghost) => moveGhost(ghost));
-  moveGhost(ghosts[0]);
+  ghosts.forEach((ghost) => moveGhost(ghost));
+  // moveGhost(ghosts[0]);
 
+  // GHOST RANDOM SELECT DIRECTION
   function selectDirection() {
     const directions = ['left', 'right', 'up', 'down'];
     const selectedDirection =
@@ -179,11 +218,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return selectedDirection;
   }
 
+  // GHOST - CALCULATE NEXT INDEX
   function resolveGhostMovement(ghost) {
     let ghostCurrentIndex = ghost.currentIndex;
     switch (selectDirection()) {
-      // Left: check if on left edge (28 / 28 = 1, modulo 0)
-      // also check if next position is allowed
+      // Left
       case 'left':
         if (ghostCurrentIndex % width !== 0) {
           nextIndex = ghostCurrentIndex - 1;
@@ -208,15 +247,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         break;
     }
-    console.log('next ghost index: ' + nextIndex);
     return nextIndex;
   }
 
-  function moveGhost(ghost) {
-    console.log('ghost: ', ghost);
-    // console.log('selectedDirection: ' + selectedDirection);
-    // console.log('ghostCurrentIndex: ' + ghostCurrentIndex);
+  // GHOST - CHECK IF NEXT INDEX IS AN ALLOWED POSITION
+  function ghostAllowedPosition(nextIndex) {
+    if (
+      squares[nextIndex].classList.contains('wall') ||
+      squares[nextIndex].classList.contains('ghost')
+    ) {
+      return false;
+    } else return true;
+  }
 
+  // MAIN MOVE GHOST FUNCTION
+  function moveGhost(ghost) {
     ghost.timerId = setInterval(() => {
       resolveGhostMovement(ghost);
 
@@ -227,20 +272,52 @@ document.addEventListener('DOMContentLoaded', () => {
           ghost.name
         );
         squares[nextIndex].classList.add('ghost', ghost.name);
-      } else resolveGhostMovement(ghost);
-      // console.log('ghost nextIndex: ' + nextIndex);
+
+        // refresh the currentIndex
+        ghost.currentIndex = nextIndex;
+        // check if ghost is scared
+        if (ghost.isScared) {
+          squares[ghost.currentIndex].classList.add('scared-ghost');
+        }
+
+        // Check for ghost - Pacman encounter
+        if (ghost.currentIndex === pacmanCurrentIndex) {
+          if (ghost.isScared) {
+            score += 50;
+            scoreDisplay.innerText = score;
+            squares[nextIndex].classList.remove(
+              'ghost',
+              'scared-ghost',
+              ghost.name
+            );
+            clearInterval(ghost.timerId);
+          } else {
+            gameOver();
+          }
+        }
+      } else {
+        resolveGhostMovement(ghost);
+      }
     }, ghost.speed);
   }
 
-  // Check if next position is allowed for ghost and return either next position or current one
-  function ghostAllowedPosition(nextIndex) {
-    if (
-      squares[nextIndex].classList.contains('wall') ||
-      squares[nextIndex].classList.contains('ghost')
-    ) {
-      return false;
-    } else return true;
+  // VICTORY
+  function victory() {
+    document.removeEventListener('keyup', movePacman);
+    ghosts.forEach((ghost) => {
+      clearInterval(ghost.timerId);
+    });
+    alert('You win! Score: ' + score);
   }
 
-  // moveGhost(ghosts[0]);
+  // GAME OVER
+  function gameOver() {
+    squares[pacmanCurrentIndex].classList.remove('pacman');
+    squares[pacmanCurrentIndex].classList.add('pacman-deceased');
+    document.removeEventListener('keyup', movePacman);
+    ghosts.forEach((ghost) => {
+      clearInterval(ghost.timerId);
+    });
+    alert('You got mangled.');
+  }
 });
