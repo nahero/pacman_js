@@ -3,7 +3,7 @@
   flex-wrap: wrap;
   width: 560px;
   height: 560px;
-  border: 2px solid black;
+  border: 10px solid lightseagreen;
 }
 
 #grid div {
@@ -64,4 +64,37 @@
 
 #grid * {
   box-sizing: border-box;
+}
+
+.btn {
+  background: salmon;
+  padding: 10px 30px;
+  border: 4px solid orangered;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  outline: none;
+  display: none;
+}
+.btn:hover {
+  text-decoration: underline;
+}
+.btn.visible {
+  display: inline-block;
+}
+
+.perspective {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+.perspective #grid {
+  transform: rotateX(30deg);
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  transform-origin: top;
+}
+.perspective .pacman {
+  /* transform: rotateX(-90deg) translateY(-10px); */
+  /* border: 1px solid black inset; */
 }

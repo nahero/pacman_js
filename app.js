@@ -1,13 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // SETUP layout variables
   const grid = document.getElementById('grid');
   const scoreDisplay = document.getElementById('score');
-  let score = 0;
-  scoreDisplay.innerText = score;
-
   const pacdotDisplay = document.getElementById('pacdotNumber');
-  let pacdotNumber = 0;
-
   const width = 28; // 28 x 28 = 784
+  const restartButton = document.getElementById('restartButton');
+  restartButton.addEventListener('click', startGame);
+
+  // SETUP dynamic variables
+  let score = 0;
+  let pacmanCurrentIndex = 0;
+  let pacdotNumber = 0;
 
   //  LAYOUT
   // prettier-ignore
@@ -47,13 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 3 - power-pellet
   // 4 - empty
 
-  layout.forEach((element) => {
-    if (element === 0) {
-      pacdotNumber++;
-    }
-  });
-  pacdotDisplay.innerText = pacdotNumber;
-
   const squares = [];
 
   // CREATE BOARD FROM LAYOUT
@@ -82,16 +78,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  createBoard();
+  // createBoard();
+  // GHOSTS
+  class Ghost {
+    constructor(name, startIndex, speed) {
+      this.name = name;
+      this.startIndex = startIndex;
+      this.speed = speed;
+      this.currentIndex = startIndex;
+      this.timerId = NaN;
+      this.isScared = false;
+    }
+  }
 
-  // PACMAN STARTING POSITION
-  let pacmanCurrentIndex = 490;
-  squares[pacmanCurrentIndex].classList.add('pacman');
+  startGame();
 
   // MOVE PACMAN
   function movePacman(e) {
-    // console.log('currentIndex: ' + pacmanCurrentIndex);
-
     squares[pacmanCurrentIndex].classList.remove('pacman');
     switch (e.keyCode) {
       // Left: check if on left edge (28 / 28 = 1, modulo 0)
@@ -130,6 +133,15 @@ document.addEventListener('DOMContentLoaded', () => {
     squares[pacmanCurrentIndex].classList.add('pacman');
     pacdotEaten(pacmanCurrentIndex);
     powerPelletEaten(pacmanCurrentIndex);
+
+    // Ghost encounter
+    ghosts.forEach((ghost) => {
+      if (ghost.currentIndex === pacmanCurrentIndex) {
+        if (ghost.isScared) {
+          killGhost(ghost);
+        } else gameOver();
+      }
+    });
 
     e.preventDefault();
   }
@@ -179,35 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.addEventListener('keyup', movePacman);
-
-  // GHOSTS
-  class Ghost {
-    constructor(name, startIndex, speed) {
-      this.name = name;
-      this.startIndex = startIndex;
-      this.speed = speed;
-      this.currentIndex = startIndex;
-      this.timerId = NaN;
-      this.isScared = false;
-    }
-  }
-
-  ghosts = [
-    new Ghost('blinky', 348, 250),
-    new Ghost('pinky', 376, 400),
-    new Ghost('inky', 351, 300),
-    new Ghost('clyde', 379, 500),
-  ];
-
-  // GHOSTS STARTING POSITIONS
-  ghosts.forEach((ghost) => {
-    squares[ghost.startIndex].classList.add('ghost', ghost.name);
-  });
-
-  // MOVE GHOSTS
-  ghosts.forEach((ghost) => moveGhost(ghost));
-  // moveGhost(ghosts[0]);
+  document.addEventListener('keydown', movePacman);
 
   // GHOST RANDOM SELECT DIRECTION
   function selectDirection() {
@@ -230,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
       // Up
       case 'up':
-        if (pacmanCurrentIndex - width >= 0) {
+        if (ghostCurrentIndex - width >= 0) {
           nextIndex = ghostCurrentIndex - width;
         }
         break;
@@ -283,14 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check for ghost - Pacman encounter
         if (ghost.currentIndex === pacmanCurrentIndex) {
           if (ghost.isScared) {
-            score += 50;
-            scoreDisplay.innerText = score;
-            squares[nextIndex].classList.remove(
-              'ghost',
-              'scared-ghost',
-              ghost.name
-            );
-            clearInterval(ghost.timerId);
+            killGhost(ghost);
           } else {
             gameOver();
           }
@@ -299,6 +276,18 @@ document.addEventListener('DOMContentLoaded', () => {
         resolveGhostMovement(ghost);
       }
     }, ghost.speed);
+  }
+
+  function killGhost(ghost) {
+    score += 100;
+    scoreDisplay.innerText = score;
+    squares[ghost.currentIndex].classList.remove(
+      'ghost',
+      'scared-ghost',
+      ghost.name
+    );
+    ghost.currentIndex = null;
+    clearInterval(ghost.timerId);
   }
 
   // VICTORY
@@ -318,6 +307,55 @@ document.addEventListener('DOMContentLoaded', () => {
     ghosts.forEach((ghost) => {
       clearInterval(ghost.timerId);
     });
-    alert('You got mangled.');
+    // showRestartButton();
+  }
+
+  function showRestartButton() {
+    restartButton.classList.add('visible');
+  }
+  function hideRestartButton() {
+    restartButton.classList.remove('visible');
+  }
+
+  // START NEW GAME
+  function startGame() {
+    createBoard();
+
+    scoreDisplay.innerText = score;
+
+    layout.forEach((element) => {
+      if (element === 0) {
+        pacdotNumber++;
+      }
+    });
+    pacdotDisplay.innerText = pacdotNumber;
+
+    // PACMAN STARTING POSITION
+    pacmanCurrentIndex = 490;
+    squares[pacmanCurrentIndex].classList.add('pacman');
+
+    ghosts = [];
+    ghosts.forEach((ghost) => {
+      squares[ghost.currentIndex].classList.remove(
+        'ghost',
+        'ghost-scared',
+        ghost.name
+      );
+    });
+    ghosts = [
+      new Ghost('blinky', 348, 250),
+      new Ghost('pinky', 376, 400),
+      new Ghost('inky', 351, 300),
+      new Ghost('clyde', 379, 500),
+    ];
+
+    // GHOSTS STARTING POSITIONS
+    ghosts.forEach((ghost) => {
+      squares[ghost.startIndex].classList.add('ghost', ghost.name);
+    });
+
+    // MOVE GHOSTS
+    ghosts.forEach((ghost) => moveGhost(ghost));
+    // moveGhost(ghosts[0]);
   }
 });
