@@ -27,9 +27,18 @@
   border: 3px solid white;
 }
 
-.pacman {
-  background-color: gold;
-  border-radius: 10px;
+.pacman-index {
+  position: relative;
+  z-index: 0;
+}
+.pacman-index:before {
+  content: '';
+  display: block;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  /* background: lightgray; */
+  z-index: 0;
 }
 .pacman-deceased {
   background-color: black;
@@ -37,8 +46,8 @@
 }
 
 .ghost {
-  border-radius: 10px;
-  border: 0;
+  border-radius: 10px 10px 2px 2px;
+  border: 2px solid;
 }
 .ghost.scared-ghost {
   background-color: aquamarine;
@@ -46,15 +55,19 @@
 
 .blinky {
   background-color: red;
+  border-color: darkred;
 }
 .pinky {
   background-color: pink;
+  border-color: darksalmon;
 }
 .inky {
   background-color: cyan;
+  border-color: darkcyan;
 }
 .clyde {
-  background-color: orange;
+  background-color: yellow;
+  border-color: darkorange;
 }
 
 .container {
@@ -97,4 +110,22 @@
 .perspective .pacman {
   /* transform: rotateX(-90deg) translateY(-10px); */
   /* border: 1px solid black inset; */
+}
+
+/* Fluid movement, apply fluidMove class to container */
+.fluidMove #grid {
+  position: relative;
+  z-index: 0;
+}
+.fluidMove #pacman {
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  background: dodgerblue;
+  border: 2px solid darkblue;
+  border-radius: 10px;
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 0.3s ease-in -0.15s;
 }

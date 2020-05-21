@@ -7,10 +7,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const restartButton = document.getElementById('restartButton');
   restartButton.addEventListener('click', startGame);
 
+  const pacAvatar = document.getElementById('pacman');
+
   // SETUP dynamic variables
   let score = 0;
   let pacmanCurrentIndex = 0;
   let pacdotNumber = 0;
+  let pacmanCoordinates = [];
+  let currentDirection = 'left';
+  let nextDirection = currentDirection;
 
   //  LAYOUT
   // prettier-ignore
@@ -21,18 +26,18 @@ document.addEventListener('DOMContentLoaded', () => {
     1,3,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,3,1,
     1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,0,1,
-    1,0,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1,
+    1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1,
+    1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1,
     1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,2,2,1,1,1,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,2,2,2,2,2,2,1,4,1,1,0,1,1,1,1,1,1,
-    4,4,4,4,4,4,0,0,0,4,1,2,2,2,2,2,2,1,4,0,0,0,4,4,4,4,4,4,
-    1,1,1,1,1,1,0,1,1,4,1,2,2,2,2,2,2,1,4,1,1,0,1,1,1,1,1,1,
+    4,4,4,4,4,4,0,0,0,4,1,1,1,1,1,1,1,1,4,0,0,0,4,4,4,4,4,4,
+    1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,1,1,1,1,1,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,1,1,1,1,1,4,1,1,0,1,1,1,1,1,1,
-    1,0,0,0,0,0,0,0,0,4,4,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,4,4,4,4,1,1,4,4,4,4,0,0,0,0,0,0,0,0,1,
     1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,
     1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,
     1,3,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,3,1,
@@ -63,13 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       switch (layout[i]) {
         case 0:
-          squares[i].classList.add('pac-dot');
+          squares[i].classList.add('pac-dot', i);
           break;
         case 1:
           squares[i].classList.add('wall');
           break;
         case 2:
-          squares[i].classList.add('ghost-lair');
+          squares[i].classList.add('ghost-lair', i);
           break;
         case 3:
           squares[i].classList.add('power-pellet');
@@ -93,68 +98,132 @@ document.addEventListener('DOMContentLoaded', () => {
 
   startGame();
 
-  // MOVE PACMAN
-  function movePacman(e) {
-    squares[pacmanCurrentIndex].classList.remove('pacman');
-    switch (e.keyCode) {
+  // Move pacman avatar
+  function moveAvatar(coordinates) {
+    let x = coordinates[0] * 20;
+    let y = coordinates[1] * 20;
+
+    pacAvatar.style.transform =
+      'translateX(' + x + 'px) translateY(' + y + 'px)';
+  }
+
+  // Get X and Y coordinates
+  function getCoordinates(index) {
+    return (pacmanCoordinates = [index % width, Math.floor(index / width)]);
+  }
+
+  // Auto move Pacman
+  function autoMovePacman() {
+    setInterval(() => {
+      // set currentDirection (default is left)
+      // set nextDirection (default = currentDirection, change on keydown)
+
+      // resolveDirection(nextDirection) -- use function with switch/case => return nextIndex
+      resolveDirection(nextDirection);
+
+      // check is nextIndex allowed
+      if (!allowedMove(nextIndex)) {
+        // --> NOT allowed -> resolveDirection(currentDirection) => return nextIndex
+        resolveDirection(currentDirection);
+        // check is nextIndex allowed
+        if (!allowedMove(nextIndex)) {
+          // --> NOT allowed -> STOP (return currentIndex)
+          return;
+          // --> IS allowed -> MOVE (currentIndex = nextIndex)
+        } else {
+          move(nextIndex);
+        }
+        // --> IS allowed -> MOVE (currentIndex = nextIndex) + currentDirection = nextDirection;
+      } else {
+        move(nextIndex);
+        currentDirection = nextDirection;
+      }
+
+      pacdotEaten(pacmanCurrentIndex);
+      powerPelletEaten(pacmanCurrentIndex);
+
+      getCoordinates(pacmanCurrentIndex);
+
+      console.log(pacmanCoordinates);
+      moveAvatar(pacmanCoordinates);
+
+      // Ghost encounter
+      ghosts.forEach((ghost) => {
+        if (ghost.currentIndex === pacmanCurrentIndex) {
+          if (ghost.isScared) {
+            killGhost(ghost);
+          } else gameOver();
+        }
+      });
+
+      // REPEAT
+    }, 200);
+  }
+
+  function move(nextIndex) {
+    squares[pacmanCurrentIndex].classList.remove('pacman-index');
+    squares[nextIndex].classList.add('pacman-index');
+    pacmanCurrentIndex = nextIndex;
+  }
+
+  function resolveDirection(direction) {
+    switch (direction) {
       // Left: check if on left edge (28 / 28 = 1, modulo 0)
-      // also check if next position is allowed
-      case 37:
+      case 'left':
         if (pacmanCurrentIndex % width !== 0) {
           nextIndex = pacmanCurrentIndex - 1;
-          allowedPosition(nextIndex);
         }
+        break;
+      case 'up':
+        if (pacmanCurrentIndex - width >= 0) {
+          nextIndex = pacmanCurrentIndex - width;
+        }
+        break;
+      case 'right':
+        if (pacmanCurrentIndex % width < width - 1) {
+          nextIndex = pacmanCurrentIndex + 1;
+        }
+        break;
+      case 'down':
+        if (pacmanCurrentIndex + width < width * width) {
+          nextIndex = pacmanCurrentIndex + width;
+        }
+        break;
+    }
+    return nextIndex;
+  }
+
+  function changeDirection(e) {
+    switch (e.keyCode) {
+      case 37:
+        nextDirection = 'left';
         break;
 
       // Up
       case 38:
-        if (pacmanCurrentIndex - width >= 0) {
-          nextIndex = pacmanCurrentIndex - width;
-          allowedPosition(nextIndex);
-        }
+        nextDirection = 'up';
         break;
 
       // Right
       case 39:
-        if (pacmanCurrentIndex % width < width - 1) {
-          nextIndex = pacmanCurrentIndex + 1;
-          allowedPosition(nextIndex);
-        }
+        nextDirection = 'right';
         break;
 
       // Down
       case 40:
-        if (pacmanCurrentIndex + width < width * width) {
-          nextIndex = pacmanCurrentIndex + width;
-          allowedPosition(nextIndex);
-        }
+        nextDirection = 'down';
         break;
     }
-    squares[pacmanCurrentIndex].classList.add('pacman');
-    pacdotEaten(pacmanCurrentIndex);
-    powerPelletEaten(pacmanCurrentIndex);
-
-    // Ghost encounter
-    ghosts.forEach((ghost) => {
-      if (ghost.currentIndex === pacmanCurrentIndex) {
-        if (ghost.isScared) {
-          killGhost(ghost);
-        } else gameOver();
-      }
-    });
-
-    e.preventDefault();
   }
 
-  // Check if next position is allowed and return either next position or current one
-  function allowedPosition(nextIndex) {
-    // Conditions
+  // Check if next position is allowed and return true or false
+  function allowedMove(nextIndex) {
     if (
       squares[nextIndex].classList.contains('wall') ||
       squares[nextIndex].classList.contains('ghost-lair')
     ) {
-      return pacmanCurrentIndex;
-    } else return (pacmanCurrentIndex = nextIndex);
+      return false;
+    } else return true;
   }
 
   // PAC-DOT EATEN
@@ -191,7 +260,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.addEventListener('keydown', movePacman);
+  // document.addEventListener('keydown', movePacman);
+  document.addEventListener('keydown', changeDirection);
 
   // GHOST RANDOM SELECT DIRECTION
   function selectDirection() {
@@ -292,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // VICTORY
   function victory() {
-    document.removeEventListener('keyup', movePacman);
+    document.removeEventListener('keydown', changeDirection);
     ghosts.forEach((ghost) => {
       clearInterval(ghost.timerId);
     });
@@ -301,12 +371,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // GAME OVER
   function gameOver() {
-    squares[pacmanCurrentIndex].classList.remove('pacman');
     squares[pacmanCurrentIndex].classList.add('pacman-deceased');
-    document.removeEventListener('keyup', movePacman);
+    document.removeEventListener('keydown', changeDirection);
     ghosts.forEach((ghost) => {
       clearInterval(ghost.timerId);
     });
+    alert('You dieded!');
     // showRestartButton();
   }
 
@@ -331,8 +401,10 @@ document.addEventListener('DOMContentLoaded', () => {
     pacdotDisplay.innerText = pacdotNumber;
 
     // PACMAN STARTING POSITION
-    pacmanCurrentIndex = 490;
-    squares[pacmanCurrentIndex].classList.add('pacman');
+    pacmanCurrentIndex = 573;
+    getCoordinates(pacmanCurrentIndex);
+    moveAvatar(pacmanCoordinates);
+    squares[pacmanCurrentIndex].classList.add('pacman-index');
 
     ghosts = [];
     ghosts.forEach((ghost) => {
@@ -343,16 +415,19 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     });
     ghosts = [
-      new Ghost('blinky', 348, 250),
-      new Ghost('pinky', 376, 400),
+      new Ghost('blinky', 347, 250),
+      new Ghost('pinky', 348, 400),
       new Ghost('inky', 351, 300),
-      new Ghost('clyde', 379, 500),
+      new Ghost('clyde', 352, 500),
     ];
 
     // GHOSTS STARTING POSITIONS
     ghosts.forEach((ghost) => {
       squares[ghost.startIndex].classList.add('ghost', ghost.name);
     });
+
+    // START MOVING PACMAN
+    autoMovePacman();
 
     // MOVE GHOSTS
     ghosts.forEach((ghost) => moveGhost(ghost));
