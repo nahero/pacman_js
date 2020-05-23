@@ -4,6 +4,8 @@
   width: 560px;
   height: 560px;
   border: 10px solid lightseagreen;
+  position: relative;
+  z-index: 0;
 }
 
 #grid div {
@@ -16,22 +18,53 @@
 }
 
 .pac-dot {
+  position: relative;
+  z-index: 1;
+}
+.pac-dot:before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
   background: green;
-  border: 8px solid white;
-  border-radius: 10px;
+  width: 4px;
+  height: 4px;
+  border-radius: 3px;
+  z-index: 1;
 }
 
 .power-pellet {
+  position: relative;
+}
+.power-pellet:before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
   background-color: green;
-  border-radius: 10px;
-  border: 3px solid white;
+  border-radius: 8px;
 }
 
+#pacman {
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  background: dodgerblue;
+  border: 2px solid darkblue;
+  border-radius: 10px;
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 0.2s linear -0s;
+}
 .pacman-index {
   position: relative;
   z-index: 0;
+  /* border: 2px solid red; */
 }
-.pacman-index:before {
+.pacman-index:after {
   content: '';
   display: block;
   position: relative;
@@ -45,29 +78,68 @@
   border-radius: 0 !important;
 }
 
-.ghost {
-  border-radius: 10px 10px 2px 2px;
-  border: 2px solid;
-}
 .ghost.scared-ghost {
   background-color: aquamarine;
 }
+.ghost-index {
+  position: relative;
+  z-index: 0;
+}
+.ghost-index:before {
+  /* content: ''; */
+}
 
-.blinky {
+.ghost {
+  border: 2px solid;
+}
+
+#blinky {
   background-color: red;
   border-color: darkred;
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 0.2s linear -0s;
 }
-.pinky {
+#pinky {
   background-color: pink;
   border-color: darksalmon;
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 0.2s linear -0s;
 }
-.inky {
+#inky {
   background-color: cyan;
   border-color: darkcyan;
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 0.2s linear -0s;
 }
-.clyde {
+#clyde {
   background-color: yellow;
   border-color: darkorange;
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 0.2s linear -0s;
 }
 
 .container {
@@ -110,22 +182,4 @@
 .perspective .pacman {
   /* transform: rotateX(-90deg) translateY(-10px); */
   /* border: 1px solid black inset; */
-}
-
-/* Fluid movement, apply fluidMove class to container */
-.fluidMove #grid {
-  position: relative;
-  z-index: 0;
-}
-.fluidMove #pacman {
-  position: absolute;
-  z-index: 1;
-  width: 20px;
-  height: 20px;
-  background: dodgerblue;
-  border: 2px solid darkblue;
-  border-radius: 10px;
-  transform-origin: center;
-  will-change: transform;
-  transition: transform 0.3s ease-in -0.15s;
 }

@@ -10,11 +10,18 @@
 
   <!-- Body -->
   <body>
-    <script src="app.js"></script>
+    <script src="main.js"></script>
+    <!-- <script src="global-events.js"></script> -->
+    <!-- <script src="movement-pacman.js"></script> -->
+    <!-- <script src="movement-ghosts.js"></script> -->
 
-    <div class="container perspective fluidMove">
+    <div class="container perspective">
       <div id="grid">
         <div id="pacman"></div>
+        <div id="blinky" class="ghost"></div>
+        <div id="pinky" class="ghost"></div>
+        <div id="inky" class="ghost"></div>
+        <div id="clyde" class="ghost"></div>
       </div>
       <h3>Score: <span id="score">0</span></h3>
       <h4>Pacdots remaining: <span id="pacdotNumber">0</span></h4>
