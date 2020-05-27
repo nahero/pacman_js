@@ -90,56 +90,50 @@
 }
 
 .ghost {
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
   border: 2px solid;
+  border-radius: 10px;
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 0.2s linear -0s;
+}
+.ghost.scared {
+  background-color: aquamarine !important;
+  /* border-color: aqua !important; */
+  animation: anim_scaredGhost 0.25s linear 7s alternate 12 both;
+}
+.ghost.dead {
+  display: none;
+}
+@keyframes anim_scaredGhost {
+  0% {
+    border-color: lightskyblue;
+    background-color: aquamarine;
+  }
+  100% {
+    border-color: blue;
+    background-color: aqua;
+  }
 }
 
-#blinky {
+#blinky.ghost {
   background-color: red;
   border-color: darkred;
-  position: absolute;
-  z-index: 1;
-  width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  transform-origin: center;
-  will-change: transform;
-  transition: transform 0.2s linear -0s;
 }
-#pinky {
+#pinky.ghost {
   background-color: pink;
   border-color: darksalmon;
-  position: absolute;
-  z-index: 1;
-  width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  transform-origin: center;
-  will-change: transform;
-  transition: transform 0.2s linear -0s;
 }
-#inky {
+#inky.ghost {
   background-color: cyan;
   border-color: darkcyan;
-  position: absolute;
-  z-index: 1;
-  width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  transform-origin: center;
-  will-change: transform;
-  transition: transform 0.2s linear -0s;
 }
-#clyde {
+#clyde.ghost {
   background-color: yellow;
   border-color: darkorange;
-  position: absolute;
-  z-index: 1;
-  width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  transform-origin: center;
-  will-change: transform;
-  transition: transform 0.2s linear -0s;
 }
 
 .container {
