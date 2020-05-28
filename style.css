@@ -49,7 +49,7 @@
 
 #pacman {
   position: absolute;
-  z-index: 1;
+  z-index: 10;
   width: 20px;
   height: 20px;
   background: dodgerblue;
@@ -61,7 +61,7 @@
 }
 .pacman-index {
   position: relative;
-  z-index: 0;
+  z-index: 1;
   /* border: 2px solid red; */
 }
 .pacman-index:after {
@@ -78,8 +78,12 @@
   border-radius: 0 !important;
 }
 
+.allowed-move {
+  border: 2px dotted grey;
+}
+
 .ghost.scared-ghost {
-  background-color: aquamarine;
+  background-color: aqua;
 }
 .ghost-index {
   position: relative;
@@ -101,7 +105,7 @@
   transition: transform 0.2s linear -0s;
 }
 .ghost.scared {
-  background-color: aquamarine !important;
+  background-color: aqua !important;
   /* border-color: aqua !important; */
   animation: anim_scaredGhost 0.25s linear 7s alternate 12 both;
 }
@@ -111,7 +115,7 @@
 @keyframes anim_scaredGhost {
   0% {
     border-color: lightskyblue;
-    background-color: aquamarine;
+    background-color: aqua;
   }
   100% {
     border-color: blue;
@@ -143,6 +147,24 @@
 
 #grid * {
   box-sizing: border-box;
+}
+
+.intersection {
+  position: relative;
+  z-index: 0;
+  transform-style: preserve-3d;
+}
+.intersection:after {
+  content: '+';
+  position: absolute;
+  top: -12px;
+  left: 0px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 35px;
+  font-weight: bold;
+  color: darkgray;
+  z-index: 1;
 }
 
 .btn {

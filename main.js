@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let pacmanCurrentIndex = 0;
   let pacdotNumber = 0;
   let pacmanCoordinates = [];
+  let ghostSpeed = 200;
 
   //  LAYOUT
   // prettier-ignore
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,2,2,1,1,1,4,1,1,0,1,1,1,1,1,1,
-    1,1,1,1,1,1,0,1,1,4,1,2,2,2,2,2,2,1,4,1,1,0,1,1,1,1,1,1,
+    1,1,1,1,1,1,0,1,1,4,1,1,2,2,2,2,1,1,4,1,1,0,1,1,1,1,1,1,
     4,4,4,4,4,4,0,0,0,4,1,1,1,1,1,1,1,1,4,0,0,0,4,4,4,4,4,4,
     1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,1,1,1,1,1,4,1,1,0,1,1,1,1,1,1,
@@ -56,34 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2 - ghost-lair
   // 3 - power-pellet
   // 4 - empty
-
-  const squares = [];
-
-  // CREATE BOARD FROM LAYOUT
-  function createBoard() {
-    console.log('createBoard executed');
-
-    for (let i = 0; i < layout.length; i++) {
-      const square = document.createElement('div');
-      grid.appendChild(square);
-      squares.push(square);
-
-      switch (layout[i]) {
-        case 0:
-          squares[i].classList.add('pac-dot', i);
-          break;
-        case 1:
-          squares[i].classList.add('wall');
-          break;
-        case 2:
-          squares[i].classList.add('ghost-lair', i);
-          break;
-        case 3:
-          squares[i].classList.add('power-pellet');
-          break;
-      }
-    }
-  }
 
   // DEFINE POSSIBLE DIRECTIONS
   const directions = [
@@ -108,16 +81,68 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentDirection = directions[0]; // left
   let nextDirection = currentDirection;
 
+  const squares = [];
+  let tempIntersections = 0;
+
+  // CREATE BOARD FROM LAYOUT
+  function createBoard() {
+    console.log('createBoard executed');
+
+    for (let i = 0; i < layout.length; i++) {
+      const square = document.createElement('div');
+      grid.appendChild(square);
+      squares.push(square);
+
+      switch (layout[i]) {
+        case 0:
+          squares[i].classList.add('pac-dot', i);
+          tempIntersections = 0;
+          directions.forEach((direction) => {
+            j = i + direction.value;
+            if (layout[j] == 0 || layout[j] == 4) {
+              tempIntersections++;
+            }
+          });
+          if (tempIntersections > 2) {
+            squares[i].classList.add('intersection');
+          }
+          break;
+        case 1:
+          squares[i].classList.add('wall', i);
+          break;
+        case 2:
+          squares[i].classList.add('ghost-lair', i);
+          break;
+        case 3:
+          squares[i].classList.add('power-pellet');
+          break;
+        case 4:
+          tempIntersections = 0;
+          directions.forEach((direction) => {
+            j = i + direction.value;
+            if (layout[j] == 0 || layout[j] == 4) {
+              tempIntersections++;
+            }
+          });
+          if (tempIntersections > 2) {
+            squares[i].classList.add('intersection');
+          }
+          break;
+      }
+    }
+  }
+
   // createBoard();
   // GHOSTS
   class Ghost {
-    constructor(name, startIndex, speed) {
+    constructor(name, startIndex) {
       this.name = name;
       this.startIndex = startIndex;
-      this.speed = speed;
       this.currentIndex = startIndex;
-      this.coordinates = [];
+      this.previousIndex = this.currentIndex; // for backwards movement
+      this.coordinates = []; // for moving avatar
       this.allowedDirections = [];
+      this.currentDirection = {};
       this.timerId = NaN;
       this.isScared = false;
     }
@@ -191,9 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
         pacdotEaten(pacmanCurrentIndex);
         powerPelletEaten(pacmanCurrentIndex);
       }, 100);
-      setTimeout(() => {
-        ghostEncounter(pacmanCurrentIndex);
-      }, 50);
+      ghostEncounter(pacmanCurrentIndex);
+      setTimeout(() => {}, 50);
     }, 200); // Repeat every X miliseconds, lower is faster
   }
 
@@ -246,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (
         list.contains('wall') ||
         list.contains('ghost-index') ||
+        list.contains('ghost-lair') ||
         list.contains('tunnel')
       ) {
         return false;
@@ -273,8 +298,10 @@ document.addEventListener('DOMContentLoaded', () => {
       squares[currentIndex].classList.remove('power-pellet');
       score += 10;
       scaredGhostsToggle(true);
+      ghostSpeed = 100;
       setTimeout(() => {
         scaredGhostsToggle(false);
+        ghostSpeed = 200;
       }, 10000);
     }
   }
@@ -300,15 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('keydown', changeDirection);
 
-  // GHOST RANDOM SELECT AN ALLOWED DIRECTION
-  function selectDirection(ghost) {
-    const directions = ghost.allowedDirections;
-    const selectedDirection =
-      directions[Math.floor(Math.random() * directions.length)];
-    // Math.random generates between 0 and 1, times directions.length
-    return selectedDirection.nextIndex;
-  }
-
   // RESOLVE NEXT INDEX FOR ANY ACTOR
   function resolveNextIndex(actor, direction) {
     // set either pacman's or ghost's current index
@@ -316,120 +334,123 @@ document.addEventListener('DOMContentLoaded', () => {
     return (nextIndex = index + direction.value);
   }
 
-  // MAIN MOVE GHOST FUNCTION
-  function moveGhost(ghost) {
-    // blinky starts moving
-    // others wait for n seconds - pinky is 2nd, inky 3rd, clyde 4th
-    // to get out of lair
+  // GET ALLOWED DIRECTIONS based on current index
+  function getAllowedDirections(ghost) {
+    // first clear the allowedDirections array so we can store new ones
+    ghost.allowedDirections = [];
 
-    // get out of lair sequence
+    // calculate all 4 directions from current position (currentIndex)
+    directions.forEach((direction) => {
+      nextIndex = ghost.currentIndex + direction.value;
 
-    // get all allowed directions from current position
-    // and check if ghost is allowed to move in that direction
-    ghosts.forEach((ghost) => {
-      // first clear the allowedDirections array so we can store new ones
-      ghost.allowedDirections = [];
-
-      console.log(
-        ghost.name + ' allowed directions: ',
-        ghost.allowedDirections
-      );
-
-      directions.forEach((direction) => {
-        nextIndex = ghost.currentIndex + direction.value;
-
-        // console.log(ghost.name + ' next index: ' + nextIndex);
-
-        // if allowed, store to ghost.allowedDirections array
-        // (this will change every ghost move interval)
-        if (allowedMove(ghost, nextIndex)) {
-          direction.nextIndex = nextIndex;
-          ghost.allowedDirections.push(direction);
-        }
-
-        // console.log(ghost.name + ' current index: ' + ghost.currentIndex);
-
-        // console.log(
-        //   ghost.name + ' allowed directions: ',
-        //   ghost.allowedDirections
-        // );
-      });
+      // now check if ghost is allowed to move in that direction
+      // if allowed, store to ghost.allowedDirections array
+      // (this will change every ghost move interval)
+      if (allowedMove(ghost, nextIndex)) {
+        direction.nextIndex = nextIndex;
+        ghost.allowedDirections.push(direction);
+      }
     });
+  }
 
-    ghost.timerId = setInterval(() => {
-      // pick an allowed direction (random or closer to pacman)
-      nextIndex = selectDirection(ghost);
-      console.log('selected Direction: ', selectDirection(ghost));
-      // move in allowed direction until an intersection, wall, or ghost
-      squares[ghost.currentIndex].classList.remove(
-        'ghost-index',
-        'scared-ghost',
-        ghost.name
-      );
-      squares[nextIndex].classList.add('ghost-index', ghost.name);
+  // GHOST RANDOM SELECT AN ALLOWED DIRECTION
+  function selectDirection(ghost) {
+    const directions = ghost.allowedDirections;
+    const directionIndex = Math.floor(Math.random() * directions.length);
+    // Math.random generates between 0 and 1, times directions.length
+    const selectedDirection = directions[directionIndex];
+    console.log('selectedDirection.nextIndex: ' + selectedDirection.nextIndex);
+    console.log('ghost.previousIndex: ' + ghost.previousIndex);
+    console.log(
+      'ghost.allowedDirections.length: ' + ghost.allowedDirections.length
+    );
 
-      ghost.currentIndex = nextIndex;
-      getCoordinates(ghost, ghost.currentIndex);
+    // check if moving backwards: nextIndex === previousIndex
+    if (selectedDirection.nextIndex === ghost.previousIndex) {
+      // is moving backwards the only option?
+      if (ghost.allowedDirections.length === 1) {
+        ghost.currentDirection = selectedDirection;
+      } else {
+        ghost.allowedDirections.splice(directionIndex, 1);
+        console.log('ghost.allowedDirections: ', ghost.allowedDirections);
+        console.log('directions: ', directions);
 
-      // check if ghost is scared
-      if (ghost.isScared) {
-        squares[ghost.currentIndex].classList.add('scared-ghost');
-        avatar = document.getElementById(ghost.name);
-        avatar.classList.add('scared');
+        const selectedDirection =
+          ghost.allowedDirections[
+            Math.floor(Math.random() * directions.length)
+          ];
+        ghost.currentDirection = selectedDirection;
       }
+    } else {
+      ghost.currentDirection = selectedDirection;
+    }
+  }
 
-      // Check for ghost - Pacman encounter
-      if (ghost.currentIndex === pacmanCurrentIndex) {
-        moveAvatar(ghost, ghost.coordinates);
-        if (ghost.isScared) {
-          killGhost(ghost);
+  // CHECK FOR INTERSECTION returns true or false
+  function onIntersection(currentIndex) {
+    return squares[currentIndex].classList.contains('intersection');
+  }
+
+  // MOVE GHOST AND AVATAR
+  function moveGhost(ghost) {
+    // move in allowed direction until an intersection, wall, or ghost
+    squares[ghost.currentIndex].classList.remove(
+      'ghost-index',
+      'scared-ghost',
+      ghost.name
+    );
+    squares[ghost.currentDirection.nextIndex].classList.add(
+      'ghost-index',
+      ghost.name
+    );
+    ghost.previousIndex = ghost.currentIndex;
+    ghost.currentIndex = ghost.currentDirection.nextIndex;
+    getCoordinates(ghost, ghost.currentIndex);
+
+    // check if ghost is scared
+    if (ghost.isScared) {
+      squares[ghost.currentIndex].classList.add('scared-ghost');
+      avatar = document.getElementById(ghost.name);
+      avatar.classList.add('scared');
+    }
+
+    // Check for ghost - Pacman encounter
+    if (ghost.currentIndex === pacmanCurrentIndex) {
+      moveAvatar(ghost, ghost.coordinates);
+      if (ghost.isScared) {
+        killGhost(ghost);
+      } else {
+        gameOver();
+      }
+    }
+    moveAvatar(ghost, ghost.coordinates);
+  }
+
+  // MAIN MOVE GHOST FUNCTION
+  function startGhostMovement(ghost) {
+    ghost.timerId = setInterval(() => {
+      // Check for intersection
+      if (onIntersection(ghost.currentIndex)) {
+        getAllowedDirections(ghost);
+        selectDirection(ghost);
+      } else {
+        // Check if ghost was already moving in one direction
+        // we want it to continue in same direction if not on intersection
+        if (ghost.currentDirection.name) {
+          nextIndex = ghost.currentIndex + ghost.currentDirection.value;
+          if (allowedMove(ghost, nextIndex)) {
+            ghost.currentDirection.nextIndex = nextIndex;
+          } else {
+            getAllowedDirections(ghost);
+            selectDirection(ghost);
+          }
         } else {
-          gameOver();
+          getAllowedDirections(ghost);
+          selectDirection(ghost);
         }
       }
-      moveAvatar(ghost, ghost.coordinates);
-    }, ghost.speed);
-    // or pacman in range (x,y coords)
-    // if intersection, wall, ghost -> pick a new direction -> move (repeat)
-    // if pacman in range -> pick direction where next index is closer to pacman
-    // pacman not in range -> move normally
-
-    // ghost.timerId = setInterval(() => {
-    //   resolveNextIndex(ghost, selectDirection());
-
-    //   if (allowedMove(ghost, nextIndex)) {
-    //     squares[ghost.currentIndex].classList.remove(
-    //       'ghost-index',
-    //       'scared-ghost',
-    //       ghost.name
-    //     );
-    //     squares[nextIndex].classList.add('ghost-index', ghost.name);
-
-    //     // refresh the currentIndex
-    //     ghost.currentIndex = nextIndex;
-    //     getCoordinates(ghost, ghost.currentIndex);
-
-    //     // check if ghost is scared
-    //     if (ghost.isScared) {
-    //       squares[ghost.currentIndex].classList.add('scared-ghost');
-    //       avatar = document.getElementById(ghost.name);
-    //       avatar.classList.add('scared');
-    //     }
-
-    //     // Check for ghost - Pacman encounter
-    //     if (ghost.currentIndex === pacmanCurrentIndex) {
-    //       moveAvatar(ghost, ghost.coordinates);
-    //       if (ghost.isScared) {
-    //         killGhost(ghost);
-    //       } else {
-    //         gameOver();
-    //       }
-    //     }
-    //   } else {
-    //     resolveNextIndex(ghost, selectDirection());
-    //   }
-    //   moveAvatar(ghost, ghost.coordinates);
-    // }, ghost.speed); // Repeat based on ghost speed
+      moveGhost(ghost);
+    }, ghostSpeed);
   }
 
   function killGhost(ghost) {
@@ -504,10 +525,10 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     });
     ghosts = [
-      new Ghost('blinky', 294, 250),
-      new Ghost('pinky', 348, 400),
-      new Ghost('inky', 351, 300),
-      new Ghost('clyde', 352, 500),
+      new Ghost('blinky', 294),
+      new Ghost('pinky', 348),
+      new Ghost('inky', 350),
+      new Ghost('clyde', 351),
     ];
     ghosts.forEach((ghost) => {
       getCoordinates(ghost, ghost.startIndex);
@@ -523,7 +544,48 @@ document.addEventListener('DOMContentLoaded', () => {
     autoMovePacman();
 
     // MOVE GHOSTS
-    ghosts.forEach((ghost) => moveGhost(ghost));
-    // moveGhost(ghosts[0]);
+    // ghosts.forEach((ghost) => startGhostMovement(ghost));
+    startGhostMovement(ghosts[0]);
+
+    // Get Pinky out of lair
+    setTimeout(() => {
+      ghosts[1].currentDirection.nextIndex = 349;
+      moveGhost(ghosts[1]);
+    }, 3000);
+    setTimeout(() => {
+      ghosts[1].currentDirection.nextIndex = 321;
+      moveGhost(ghosts[1]);
+    }, 3200);
+    setTimeout(() => {
+      ghosts[1].currentDirection.nextIndex = 293;
+      moveGhost(ghosts[1]);
+      startGhostMovement(ghosts[1]);
+    }, 3400);
+
+    // Get Inky out of lair
+    setTimeout(() => {
+      ghosts[2].currentDirection.nextIndex = 322;
+      moveGhost(ghosts[2]);
+    }, 6000);
+    setTimeout(() => {
+      ghosts[2].currentDirection.nextIndex = 294;
+      moveGhost(ghosts[2]);
+      startGhostMovement(ghosts[2]);
+    }, 6200);
+
+    // Get Clyde out of lair
+    setTimeout(() => {
+      ghosts[3].currentDirection.nextIndex = 350;
+      moveGhost(ghosts[3]);
+    }, 9000);
+    setTimeout(() => {
+      ghosts[3].currentDirection.nextIndex = 322;
+      moveGhost(ghosts[3]);
+    }, 9200);
+    setTimeout(() => {
+      ghosts[3].currentDirection.nextIndex = 294;
+      moveGhost(ghosts[3]);
+      startGhostMovement(ghosts[3]);
+    }, 9400);
   }
 });
