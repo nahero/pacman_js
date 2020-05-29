@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const pinky = document.getElementById('pinky');
   const inky = document.getElementById('inky');
   const clyde = document.getElementById('clyde');
+  const ghostAvatars = [];
+  ghostAvatars.push(blinky, pinky, inky, clyde);
 
   // SETUP dynamic variables
   let score = 0;
@@ -86,8 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // CREATE BOARD FROM LAYOUT
   function createBoard() {
-    console.log('createBoard executed');
-
     for (let i = 0; i < layout.length; i++) {
       const square = document.createElement('div');
       grid.appendChild(square);
@@ -216,13 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
         pacdotEaten(pacmanCurrentIndex);
         powerPelletEaten(pacmanCurrentIndex);
       }, 100);
-      ghostEncounter(pacmanCurrentIndex);
-      setTimeout(() => {}, 50);
+
+      setTimeout(pacmanGhostEncounterCheck(), 100);
     }, 200); // Repeat every X miliseconds, lower is faster
   }
 
   // Ghost encounter
-  function ghostEncounter(pacmanCurrentIndex) {
+  function pacmanGhostEncounterCheck() {
     ghosts.forEach((ghost) => {
       if (ghost.currentIndex === pacmanCurrentIndex) {
         if (ghost.isScared) {
@@ -282,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function pacdotEaten(currentIndex) {
     if (squares[currentIndex].classList.contains('pac-dot')) {
       squares[currentIndex].classList.remove('pac-dot');
+      squares[currentIndex].classList.add('eaten');
       score++;
       scoreDisplay.innerText = score;
       pacdotNumber--;
@@ -298,10 +299,17 @@ document.addEventListener('DOMContentLoaded', () => {
       squares[currentIndex].classList.remove('power-pellet');
       score += 10;
       scaredGhostsToggle(true);
-      ghostSpeed = 100;
+      ghostSpeed = 300;
+      ghostAvatars.forEach((ghost) => {
+        ghost.style.transition = 'transform ' + ghostSpeed / 1000 + 's linear';
+      });
       setTimeout(() => {
         scaredGhostsToggle(false);
         ghostSpeed = 200;
+        ghostAvatars.forEach((ghost) => {
+          ghost.style.transition =
+            'transform ' + ghostSpeed / 1000 + 's linear';
+        });
       }, 10000);
     }
   }
@@ -414,43 +422,40 @@ document.addEventListener('DOMContentLoaded', () => {
       avatar.classList.add('scared');
     }
 
-    // Check for ghost - Pacman encounter
-    if (ghost.currentIndex === pacmanCurrentIndex) {
-      moveAvatar(ghost, ghost.coordinates);
-      if (ghost.isScared) {
-        killGhost(ghost);
-      } else {
-        gameOver();
-      }
-    }
     moveAvatar(ghost, ghost.coordinates);
+
+    // Check for ghost - Pacman encounter
+    setTimeout(pacmanGhostEncounterCheck(), 100);
   }
 
-  // MAIN MOVE GHOST FUNCTION
-  function startGhostMovement(ghost) {
-    ghost.timerId = setInterval(() => {
-      // Check for intersection
-      if (onIntersection(ghost.currentIndex)) {
-        getAllowedDirections(ghost);
-        selectDirection(ghost);
-      } else {
-        // Check if ghost was already moving in one direction
-        // we want it to continue in same direction if not on intersection
-        if (ghost.currentDirection.name) {
-          nextIndex = ghost.currentIndex + ghost.currentDirection.value;
-          if (allowedMove(ghost, nextIndex)) {
-            ghost.currentDirection.nextIndex = nextIndex;
-          } else {
-            getAllowedDirections(ghost);
-            selectDirection(ghost);
-          }
+  function ghostMovement(ghost) {
+    // Check for intersection
+    if (onIntersection(ghost.currentIndex)) {
+      getAllowedDirections(ghost);
+      selectDirection(ghost);
+    } else {
+      // Check if ghost was already moving in one direction
+      // we want it to continue in same direction if not on intersection
+      if (ghost.currentDirection.name) {
+        nextIndex = ghost.currentIndex + ghost.currentDirection.value;
+        if (allowedMove(ghost, nextIndex)) {
+          ghost.currentDirection.nextIndex = nextIndex;
         } else {
           getAllowedDirections(ghost);
           selectDirection(ghost);
         }
+      } else {
+        getAllowedDirections(ghost);
+        selectDirection(ghost);
       }
-      moveGhost(ghost);
-    }, ghostSpeed);
+    }
+    moveGhost(ghost);
+  }
+
+  // MAIN MOVE GHOST FUNCTION
+  function startGhostMovement(g) {
+    ghostMovement(g);
+    g.timerId = setTimeout(startGhostMovement, ghostSpeed, g);
   }
 
   function killGhost(ghost) {
