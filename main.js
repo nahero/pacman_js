@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Auto move Pacman
   function autoMovePacman() {
-    setInterval(() => {
+    pacmanTimerId = setInterval(() => {
       // set currentDirection (default is left)
       // set nextDirection (default = currentDirection, change on keydown)
 
@@ -282,7 +282,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function pacdotEaten(currentIndex) {
     if (squares[currentIndex].classList.contains('pac-dot')) {
       squares[currentIndex].classList.remove('pac-dot');
-      squares[currentIndex].classList.add('eaten');
+      squares[currentIndex].classList.add('pac-dot--eaten');
+      setTimeout(() => {
+        squares[currentIndex].classList.remove('pac-dot--eaten');
+      }, 400);
       score++;
       scoreDisplay.innerText = score;
       pacdotNumber--;
@@ -297,6 +300,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function powerPelletEaten(currentIndex) {
     if (squares[currentIndex].classList.contains('power-pellet')) {
       squares[currentIndex].classList.remove('power-pellet');
+      squares[currentIndex].classList.add('pellet--eaten');
+      setTimeout(() => {
+        squares[currentIndex].classList.remove('pellet--eaten');
+      }, 500);
       score += 10;
       scaredGhostsToggle(true);
       ghostSpeed = 300;
@@ -453,9 +460,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // MAIN MOVE GHOST FUNCTION
-  function startGhostMovement(g) {
-    ghostMovement(g);
-    g.timerId = setTimeout(startGhostMovement, ghostSpeed, g);
+  function startGhostMovement(ghost) {
+    ghostMovement(ghost);
+    ghost.timerId = setTimeout(startGhostMovement, ghostSpeed, ghost);
   }
 
   function killGhost(ghost) {
@@ -485,11 +492,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // GAME OVER
   function gameOver() {
     squares[pacmanCurrentIndex].classList.add('pacman-deceased');
+    clearInterval(pacmanTimerId);
     pacmanCurrentIndex = null;
-    document.removeEventListener('keydown', changeDirection);
     nextDirection = null;
+    document.removeEventListener('keydown', changeDirection);
     ghosts.forEach((ghost) => {
       clearInterval(ghost.timerId);
+      ghost.currentIndex = null;
     });
     alert('You dieded!');
     // showRestartButton();
