@@ -41,26 +41,27 @@
   position: absolute;
   top: 8px;
   left: 8px;
-  background: green;
+  background-color: green;
   width: 4px;
   height: 4px;
   border-radius: 3px;
   z-index: 1;
   will-change: transform;
-  animation: eatenPacDot 0.4s ease-out;
+  animation: eatenPacDot 0.4s linear both;
 }
 @keyframes eatenPacDot {
   0% {
     transform: translateZ(0px);
     opacity: 1;
   }
-  80% {
-    opacity: 1;
+  60% {
+    opacity: 0.8;
+    transform: translateZ(30px) scale(1);
+    background-color: black;
   }
   100% {
-    transform: translateZ(40px) scale(1);
+    transform: translateZ(25px) scale(0.4);
     opacity: 0;
-    background: yellow;
   }
 }
 
@@ -173,7 +174,7 @@
   animation: anim_scaredGhost 0.25s linear 7s alternate 12 both;
 }
 .ghost.dead {
-  display: none;
+  border: 3px solid black !important;
 }
 @keyframes anim_scaredGhost {
   0% {
@@ -183,6 +184,37 @@
   100% {
     border-color: blue;
     background-color: aqua;
+  }
+}
+.ghost-score {
+  position: relative;
+  z-index: 1;
+}
+.ghost-score:after {
+  content: '100';
+  width: 20px;
+  height: 20px;
+  top: 0;
+  left: 0;
+  /* background: white; */
+  animation: ghostScore 0.4s linear both;
+  z-index: 1;
+}
+@keyframes ghostScore {
+  0% {
+    opacity: 0;
+    transform: translateZ(0px);
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+    transform: translateZ(50px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateZ(50px);
   }
 }
 
