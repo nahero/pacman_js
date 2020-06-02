@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const clyde = document.getElementById('clyde');
   const ghostAvatars = [];
   ghostAvatars.push(blinky, pinky, inky, clyde);
+  const lairExitIndex = 293;
 
   // SETUP dynamic variables
   let score = 0;
@@ -151,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   startGame();
 
-  // Move pacman avatar
+  // Move avatar
   function moveAvatar(actor, coordinates) {
     // console.log('coordinates: ' + coordinates);
 
@@ -162,9 +163,34 @@ document.addEventListener('DOMContentLoaded', () => {
       pacAvatar.style.transform =
         'translateX(' + x + 'px) translateY(' + y + 'px)';
     } else {
-      selectAvatar(actor);
+      let avatar = selectAvatar(actor);
       avatar.style.transform =
         'translateX(' + x + 'px) translateY(' + y + 'px)';
+    }
+  }
+
+  // Special Move avatar
+  function specialMoveAvatar(actor, coordinates, speed) {
+    // console.log('coordinates: ' + coordinates);
+
+    let x = coordinates[0] * 20;
+    let y = coordinates[1] * 20;
+
+    if (actor === 'pacman') {
+    } else {
+      let avatar = selectAvatar(actor);
+      if (speed) {
+        avatar.style.transition = 'transform ' + speed + 's linear';
+        setTimeout(() => {
+          avatar.style.transition = null;
+        }, speed * 1000);
+      }
+      avatar.style.transform =
+        'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(50px)';
+      setTimeout(() => {
+        avatar.style.transform =
+          'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(0px)';
+      }, speed * 500);
     }
   }
 
@@ -377,11 +403,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const directionIndex = Math.floor(Math.random() * directions.length);
     // Math.random generates between 0 and 1, times directions.length
     const selectedDirection = directions[directionIndex];
-    console.log('selectedDirection.nextIndex: ' + selectedDirection.nextIndex);
-    console.log('ghost.previousIndex: ' + ghost.previousIndex);
-    console.log(
-      'ghost.allowedDirections.length: ' + ghost.allowedDirections.length
-    );
+    // console.log('selectedDirection.nextIndex: ' + selectedDirection.nextIndex);
+    // console.log('ghost.previousIndex: ' + ghost.previousIndex);
+    // console.log(
+    //   'ghost.allowedDirections.length: ' + ghost.allowedDirections.length
+    // );
 
     // check if moving backwards: nextIndex === previousIndex
     if (selectedDirection.nextIndex === ghost.previousIndex) {
@@ -390,8 +416,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ghost.currentDirection = selectedDirection;
       } else {
         ghost.allowedDirections.splice(directionIndex, 1);
-        console.log('ghost.allowedDirections: ', ghost.allowedDirections);
-        console.log('directions: ', directions);
+        // console.log('ghost.allowedDirections: ', ghost.allowedDirections);
+        // console.log('directions: ', directions);
 
         const selectedDirection =
           ghost.allowedDirections[
@@ -468,26 +494,38 @@ document.addEventListener('DOMContentLoaded', () => {
     ghost.timerId = setTimeout(startGhostMovement, ghostSpeed, ghost);
   }
 
-  // MAIN MOVE GHOST FUNCTION
-  // function startGhostMovement(ghost) {
-  //   ghostMovement(ghost);
-  //   ghost.timerId = setTimeout(startGhostMovement, ghostSpeed, ghost);
-  // }
-
-  // GET OUT OF LAIR SEQUENCE
-  function getGhostOutOfLair(ghost) {
-    ghost.isRespawning = true;
-    // set exit index
-    const exitIndex = 293;
-    // move towards exit index until reached
-    if (ghost.currentIndex != exitIndex) {
-      ghost.timerId = setInterval(() => {
-        moveTowardTarget(ghost, exitIndex);
-      }, 200);
+  // INIT GHOST
+  function initGhost(ghost) {
+    if (ghost.currentIndex != lairExitIndex) {
+      moveTowardTarget(ghost, lairExitIndex);
+      ghost.timerId = setTimeout(initGhost, ghostSpeed, ghost);
     } else {
+      ghost.isRespawning = false;
+      clearInterval(ghost.timerId);
       startGhostMovement(ghost);
     }
   }
+
+  // PROMISE EXAMPLE
+  // function testCoords(currentCoords, nextCoords, targetCoords) {
+  //   return new Promise((resolve, reject) => {
+  //     if (ifCoordsCloser(currentCoords, nextCoords, targetCoords)) {
+  //       resolve(nextCoords);
+  //     } else {
+  //       reject('Coords are not closer');
+  //     }
+  //   });
+  // }
+
+  // testCoords([2, 5], [1, 5], [5, 3]).then(successHandler).catch(errorHandler);
+
+  // function successHandler(result) {
+  //   console.log('Next coords should be: ' + result);
+  // }
+
+  // function errorHandler(error) {
+  //   console.log('ERROR: ' + error);
+  // }
 
   // MOVE TOWARD TARGET
   function moveTowardTarget(ghost, targetIndex) {
@@ -551,13 +589,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // get first free spot in lair (or set index manually)
     ghost.currentIndex = 348;
     // animate avatar from current coords to lair coords
-    selectAvatar(ghost);
+    let avatar = selectAvatar(ghost);
     getCoordinates(ghost, ghost.currentIndex);
-    moveAvatar(ghost, ghost.coordinates);
-    // reinitiate ghost
-    // move out of lair and start movement
-    getAllowedDirections(ghost);
-    startGhostMovement(ghost);
+    specialMoveAvatar(ghost, ghost.coordinates, 2);
+    setTimeout(() => {
+      avatar.classList.remove('dead');
+      // reinitiate ghost
+      ghost.isRespawning = true;
+      // move out of lair and start movement
+      initGhost(ghost);
+    }, 4000);
   }
 
   // VICTORY
@@ -639,51 +680,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // TEST GHOST
     // moveTowardTarget(ghosts[0], pacmanCurrentIndex);
-    getGhostOutOfLair(ghosts[2]);
+
+    // getGhostOutOfLair(ghosts[2]);
+    // getGhostOutOfLair(ghosts[3]);
 
     // MOVE GHOSTS
     // ghosts.forEach((ghost) => startGhostMovement(ghost));
-    // startGhostMovement(ghosts[0]);
+    initGhost(ghosts[0]);
 
     // Get Pinky out of lair
-    // setTimeout(() => {
-    //   ghosts[1].currentDirection.nextIndex = 349;
-    //   moveGhost(ghosts[1]);
-    // }, 3000);
-    // setTimeout(() => {
-    //   ghosts[1].currentDirection.nextIndex = 321;
-    //   moveGhost(ghosts[1]);
-    // }, 3200);
-    // setTimeout(() => {
-    //   ghosts[1].currentDirection.nextIndex = 293;
-    //   moveGhost(ghosts[1]);
-    //   startGhostMovement(ghosts[1]);
-    // }, 3400);
+    setTimeout(() => {
+      initGhost(ghosts[1]);
+    }, 3000);
 
     // // Get Inky out of lair
-    // setTimeout(() => {
-    //   ghosts[2].currentDirection.nextIndex = 322;
-    //   moveGhost(ghosts[2]);
-    // }, 6000);
-    // setTimeout(() => {
-    //   ghosts[2].currentDirection.nextIndex = 294;
-    //   moveGhost(ghosts[2]);
-    //   startGhostMovement(ghosts[2]);
-    // }, 6200);
+    setTimeout(() => {
+      initGhost(ghosts[2]);
+    }, 6000);
 
     // // Get Clyde out of lair
-    // setTimeout(() => {
-    //   ghosts[3].currentDirection.nextIndex = 350;
-    //   moveGhost(ghosts[3]);
-    // }, 9000);
-    // setTimeout(() => {
-    //   ghosts[3].currentDirection.nextIndex = 322;
-    //   moveGhost(ghosts[3]);
-    // }, 9200);
-    // setTimeout(() => {
-    //   ghosts[3].currentDirection.nextIndex = 294;
-    //   moveGhost(ghosts[3]);
-    //   startGhostMovement(ghosts[3]);
-    // }, 9400);
+    setTimeout(() => {
+      initGhost(ghosts[3]);
+    }, 9000);
   }
 });

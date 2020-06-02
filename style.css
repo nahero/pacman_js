@@ -170,7 +170,6 @@
 }
 .ghost.scared {
   background-color: aqua !important;
-  /* border-color: aqua !important; */
   animation: anim_scaredGhost 0.25s linear 7s alternate 12 both;
 }
 .ghost.dead {
