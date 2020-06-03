@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let pacdotNumber = 0;
   let pacmanCoordinates = [];
   let ghostSpeed = 200;
+  let pacmanSpeed = 200;
+  let pacEatTimeout = null;
+  let pacGhostTimeout = null;
 
   //  LAYOUT
   // prettier-ignore
@@ -152,13 +155,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   startGame();
 
-  // Move avatar
-  function moveAvatar(actor, coordinates) {
-    // console.log('coordinates: ' + coordinates);
-
-    let x = coordinates[0] * 20;
-    let y = coordinates[1] * 20;
-
+  // Place avatar
+  function placeAvatar(actor, coords) {
+    let x = coords[0] * 20;
+    let y = coords[1] * 20;
     if (actor === 'pacman') {
       pacAvatar.style.transform =
         'translateX(' + x + 'px) translateY(' + y + 'px)';
@@ -169,30 +169,100 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Special Move avatar
-  function specialMoveAvatar(actor, coordinates, speed) {
-    // console.log('coordinates: ' + coordinates);
+  // Move avatar
+  function moveAvatar(actor, currentCoords, targetCoords) {
+    let currX = currentCoords[0] * 20;
+    let currY = currentCoords[1] * 20;
+    let x = targetCoords[0] * 20;
+    let y = targetCoords[1] * 20;
 
-    let x = coordinates[0] * 20;
-    let y = coordinates[1] * 20;
+    let moveProps = [
+      { transform: 'translateX(' + currX + 'px) translateY(' + currY + 'px)' },
+      { transform: 'translateX(' + x + 'px) translateY(' + y + 'px)' },
+    ];
+    let moveTiming = {
+      duration: ghostSpeed,
+      iterations: 1,
+      fill: 'both',
+    };
 
     if (actor === 'pacman') {
+      // set pacman timing separate from ghosts (onGhostScared changes speed)
+      moveTiming.duration = pacmanSpeed;
+      pacAvatarMoveAnimation = pacAvatar.animate(moveProps, moveTiming);
+      pacAvatarMoveAnimation.play();
     } else {
       let avatar = selectAvatar(actor);
-      if (speed) {
-        avatar.style.transition = 'transform ' + speed + 's linear';
-        setTimeout(() => {
-          avatar.style.transition = null;
-        }, speed * 1000);
-      }
-      avatar.style.transform =
-        'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(50px)';
-      setTimeout(() => {
-        avatar.style.transform =
-          'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(0px)';
-      }, speed * 500);
+      ghostAvatarMoveAnimation = avatar.animate(moveProps, moveTiming);
+      ghostAvatarMoveAnimation.play();
     }
   }
+
+  // Special Move avatar
+  function specialMoveAvatar(ghost, currentCoords, targetCoords) {
+    clearInterval(ghost.timerId);
+
+    let currX = currentCoords[0] * 20;
+    let currY = currentCoords[1] * 20;
+    let x = targetCoords[0] * 20;
+    let y = targetCoords[1] * 20;
+    let xc = currX + x;
+    let yc = currY + y;
+
+    let avatar = selectAvatar(ghost);
+
+    let flyAnimation = [
+      {
+        transform:
+          'translateX(' +
+          currX +
+          'px) translateY(' +
+          currY +
+          'px) translateZ(0)',
+        filter: 'blur(0px)',
+      },
+      {
+        transform:
+          'translateX(' +
+          (xc * 1) / 3 +
+          'px) translateY(' +
+          (yc * 1) / 3 +
+          'px) translateZ(50px) scale(1.5)',
+        filter: 'blur(5px)',
+      },
+      {
+        transform:
+          'translateX(' +
+          (xc * 2) / 3 +
+          'px) translateY(' +
+          (yc * 2) / 3 +
+          'px) translateZ(50px)',
+        filter: 'blur(5px)',
+      },
+      {
+        transform:
+          'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(0)',
+        filter: 'blur(0px)',
+      },
+    ];
+    let flyTiming = {
+      duration: 2000,
+      easing: 'ease-out',
+      iterations: 1,
+      fill: 'forwards',
+    };
+
+    flyAnim = avatar.animate(flyAnimation, flyTiming);
+    flyAnim.play();
+    setTimeout(() => {
+      flyAnim.cancel();
+    }, 3800);
+  }
+
+  // ghost is dead, has class dead, cleared timer etc.
+  // set index inside lair
+  // animate avatar to lair index
+  //
 
   // Get X and Y coordinates for actors
   function getCoordinates(actor, index) {
@@ -205,7 +275,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Get X and Y coordinates for any grid index
   function getGridCoordinates(index) {
-    return (coordinates = [index % width, Math.floor(index / width)]);
+    coordinates = [index % width, Math.floor(index / width)];
+    return coordinates;
+  }
+
+  // Get X and Y coordinates for any grid index - HELPER
+  function testCoordinates(index) {
+    coordinates = [index % width, Math.floor(index / width)];
+    cl(coordinates);
   }
 
   // Auto move Pacman
@@ -213,6 +290,9 @@ document.addEventListener('DOMContentLoaded', () => {
     pacmanTimerId = setInterval(() => {
       // set currentDirection (default is left)
       // set nextDirection (default = currentDirection, change on keydown)
+      if (pacEatTimeout && pacGhostTimeout) {
+        clearInterval(pacEatTimeout, pacGhostTimeout);
+      }
 
       // resolveDirection(nextDirection) -- use function with switch/case => return nextIndex
       resolveNextIndex('pacman', nextDirection);
@@ -235,18 +315,12 @@ document.addEventListener('DOMContentLoaded', () => {
         currentDirection = nextDirection;
       }
 
-      // Visually move Pacman
-      // Pacman is separated from pacman-index (actual place on grid) for fluent movement animation
-      getCoordinates('pacman', pacmanCurrentIndex);
-      moveAvatar('pacman', pacmanCoordinates);
-
       // Delay action by about half of movement speed, so the effect of moving matches the visual movement
-      setTimeout(() => {
+      pacEatTimeout = setTimeout(() => {
         pacdotEaten(pacmanCurrentIndex);
         powerPelletEaten(pacmanCurrentIndex);
       }, 100);
-
-      setTimeout(pacmanGhostEncounterCheck(), 100);
+      pacGhostTimeout = setTimeout(pacmanGhostEncounterCheck(), 100);
     }, 200); // Repeat every X miliseconds, lower is faster
   }
 
@@ -264,7 +338,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function move(nextIndex) {
     squares[pacmanCurrentIndex].classList.remove('pacman-index');
     squares[nextIndex].classList.add('pacman-index');
+    // get grid coordinates on current index before it gets changed in move()
+    pacmanCurrentCoords = getGridCoordinates(pacmanCurrentIndex);
     pacmanCurrentIndex = nextIndex;
+    // Visually move Pacman
+    // Pacman is separated from pacman-index (actual place on grid) for fluent movement animation
+    getCoordinates('pacman', pacmanCurrentIndex);
+    moveAvatar('pacman', pacmanCurrentCoords, pacmanCoordinates);
   }
 
   function changeDirection(e) {
@@ -448,6 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ghost.name
     );
     ghost.previousIndex = ghost.currentIndex;
+    currentCoords = getGridCoordinates(ghost.currentIndex);
     ghost.currentIndex = ghost.currentDirection.nextIndex;
     getCoordinates(ghost, ghost.currentIndex);
 
@@ -458,7 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
       avatar.classList.add('scared');
     }
 
-    moveAvatar(ghost, ghost.coordinates);
+    moveAvatar(ghost, currentCoords, ghost.coordinates);
 
     // Check for ghost - Pacman encounter
     setTimeout(pacmanGhostEncounterCheck(), 100);
@@ -586,15 +667,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // RESPAWN GHOST
   function respawnGhost(ghost) {
     // on ghost killed, fly the avatar back to lair:
+    // get current coordinates for animation purposes
+    const currentCoords = ghost.coordinates;
     // get first free spot in lair (or set index manually)
-    ghost.currentIndex = 348;
+    ghost.currentIndex = 349;
+    const targetCoords = getGridCoordinates(ghost.currentIndex);
     // animate avatar from current coords to lair coords
-    let avatar = selectAvatar(ghost);
-    getCoordinates(ghost, ghost.currentIndex);
-    specialMoveAvatar(ghost, ghost.coordinates, 2);
+    // let avatar = selectAvatar(ghost);
+    // getCoordinates(ghost, ghost.currentIndex);
+    specialMoveAvatar(ghost, currentCoords, targetCoords);
+
+    // reinitiate ghost
     setTimeout(() => {
+      let avatar = selectAvatar(ghost);
       avatar.classList.remove('dead');
-      // reinitiate ghost
       ghost.isRespawning = true;
       // move out of lair and start movement
       initGhost(ghost);
@@ -604,6 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // VICTORY
   function victory() {
     document.removeEventListener('keydown', changeDirection);
+    clearInterval(pacmanTimerId);
     ghosts.forEach((ghost) => {
       clearInterval(ghost.timerId);
     });
@@ -632,6 +719,11 @@ document.addEventListener('DOMContentLoaded', () => {
     restartButton.classList.remove('visible');
   }
 
+  // CONSOLE LOG HELPER
+  function cl(value) {
+    return console.log(value);
+  }
+
   // START NEW GAME
   function startGame() {
     createBoard();
@@ -648,7 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // PACMAN STARTING POSITION
     pacmanCurrentIndex = 573;
     getCoordinates('pacman', pacmanCurrentIndex);
-    moveAvatar('pacman', pacmanCoordinates);
+    placeAvatar('pacman', pacmanCoordinates);
     squares[pacmanCurrentIndex].classList.add('pacman-index');
 
     ghosts = [];
@@ -667,7 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     ghosts.forEach((ghost) => {
       getCoordinates(ghost, ghost.startIndex);
-      moveAvatar(ghost, ghost.coordinates);
+      placeAvatar(ghost, ghost.coordinates);
     });
 
     // GHOSTS STARTING POSITIONS
@@ -679,28 +771,30 @@ document.addEventListener('DOMContentLoaded', () => {
     autoMovePacman();
 
     // TEST GHOST
-    // moveTowardTarget(ghosts[0], pacmanCurrentIndex);
+    ghosts[0].timerId = setInterval(() => {
+      moveTowardTarget(ghosts[0], pacmanCurrentIndex);
+    }, ghostSpeed);
 
     // getGhostOutOfLair(ghosts[2]);
     // getGhostOutOfLair(ghosts[3]);
 
     // MOVE GHOSTS
     // ghosts.forEach((ghost) => startGhostMovement(ghost));
-    initGhost(ghosts[0]);
+    // initGhost(ghosts[0]);
 
-    // Get Pinky out of lair
-    setTimeout(() => {
-      initGhost(ghosts[1]);
-    }, 3000);
+    // // Get Pinky out of lair
+    // setTimeout(() => {
+    //   initGhost(ghosts[1]);
+    // }, 3000);
 
-    // // Get Inky out of lair
-    setTimeout(() => {
-      initGhost(ghosts[2]);
-    }, 6000);
+    // // // Get Inky out of lair
+    // setTimeout(() => {
+    //   initGhost(ghosts[2]);
+    // }, 6000);
 
-    // // Get Clyde out of lair
-    setTimeout(() => {
-      initGhost(ghosts[3]);
-    }, 9000);
+    // // // Get Clyde out of lair
+    // setTimeout(() => {
+    //   initGhost(ghosts[3]);
+    // }, 9000);
   }
 });

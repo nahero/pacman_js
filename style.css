@@ -165,8 +165,8 @@
   border: 2px solid;
   border-radius: 10px;
   transform-origin: center;
-  will-change: transform;
-  transition: transform 0.2s linear;
+  will-change: transform filter;
+  /* transition: transform 0.2s linear; */
 }
 .ghost.scared {
   background-color: aqua !important;
