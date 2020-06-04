@@ -208,6 +208,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let y = targetCoords[1] * 20;
     let xc = currX + x;
     let yc = currY + y;
+    let diffx = Math.abs(currX - x);
+    let diffy = Math.abs(currY - y);
+
+    // calc minimum distance between current and target using hypothenuse
+    const distance = Math.sqrt(diffx * diffx + diffy * diffy);
+    const calcSpeed = distance * 6;
+    cl(distance);
+    cl(calcSpeed);
 
     let avatar = selectAvatar(ghost);
 
@@ -218,36 +226,38 @@ document.addEventListener('DOMContentLoaded', () => {
           currX +
           'px) translateY(' +
           currY +
-          'px) translateZ(0)',
-        filter: 'blur(0px)',
+          'px) translateZ(0) scale(1)',
       },
       {
         transform:
           'translateX(' +
-          (xc * 1) / 3 +
+          currX +
           'px) translateY(' +
-          (yc * 1) / 3 +
-          'px) translateZ(50px) scale(1.5)',
-        filter: 'blur(5px)',
+          currY +
+          'px) translateZ(50px) scale(0.3)',
+        offset: 0.15,
       },
       {
         transform:
           'translateX(' +
-          (xc * 2) / 3 +
+          x +
           'px) translateY(' +
-          (yc * 2) / 3 +
-          'px) translateZ(50px)',
-        filter: 'blur(5px)',
+          y +
+          'px) translateZ(50px) scale(0.3)',
+        offset: 0.85,
       },
       {
         transform:
-          'translateX(' + x + 'px) translateY(' + y + 'px) translateZ(0)',
-        filter: 'blur(0px)',
+          'translateX(' +
+          x +
+          'px) translateY(' +
+          y +
+          'px) translateZ(0) scale(1)',
       },
     ];
     let flyTiming = {
-      duration: 2000,
-      easing: 'ease-out',
+      duration: calcSpeed,
+      easing: 'cubic-bezier(.6,.01,.44,1)',
       iterations: 1,
       fill: 'forwards',
     };
@@ -256,13 +266,23 @@ document.addEventListener('DOMContentLoaded', () => {
     flyAnim.play();
     setTimeout(() => {
       flyAnim.cancel();
-    }, 3800);
+      animRespawning(avatar).play();
+    }, calcSpeed);
   }
 
-  // ghost is dead, has class dead, cleared timer etc.
-  // set index inside lair
-  // animate avatar to lair index
-  //
+  // Respawning animation
+  function animRespawning(avatar) {
+    const animRespawning_props = [{ opacity: 1 }, { opacity: 0.2 }];
+    const animRespawning_timing = {
+      duration: 400,
+      easing: 'linear',
+      iterations: 10,
+    };
+    return (animation = avatar.animate(
+      animRespawning_props,
+      animRespawning_timing
+    ));
+  }
 
   // Get X and Y coordinates for actors
   function getCoordinates(actor, index) {
@@ -678,10 +698,10 @@ document.addEventListener('DOMContentLoaded', () => {
     specialMoveAvatar(ghost, currentCoords, targetCoords);
 
     // reinitiate ghost
+    ghost.isRespawning = true;
+    let avatar = selectAvatar(ghost);
     setTimeout(() => {
-      let avatar = selectAvatar(ghost);
       avatar.classList.remove('dead');
-      ghost.isRespawning = true;
       // move out of lair and start movement
       initGhost(ghost);
     }, 4000);
@@ -787,12 +807,12 @@ document.addEventListener('DOMContentLoaded', () => {
     //   initGhost(ghosts[1]);
     // }, 3000);
 
-    // // // Get Inky out of lair
+    // // Get Inky out of lair
     // setTimeout(() => {
     //   initGhost(ghosts[2]);
     // }, 6000);
 
-    // // // Get Clyde out of lair
+    // // Get Clyde out of lair
     // setTimeout(() => {
     //   initGhost(ghosts[3]);
     // }, 9000);

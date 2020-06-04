@@ -173,7 +173,7 @@
   animation: anim_scaredGhost 0.25s linear 7s alternate 12 both;
 }
 .ghost.dead {
-  border: 3px solid black !important;
+  /* border: 3px solid black !important; */
 }
 @keyframes anim_scaredGhost {
   0% {
