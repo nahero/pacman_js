@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let moveTiming = {
       duration: ghostSpeed,
       iterations: 1,
-      fill: 'both',
+      fill: 'forwards',
     };
 
     if (actor === 'pacman') {
@@ -260,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
       duration: calcSpeed,
       easing: 'cubic-bezier(.6,.01,.44,1)',
       iterations: 1,
-      fill: 'both',
     };
 
     flyAnim = ghost.avatar.animate(flyAnimation, flyTiming);
@@ -323,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function autoMovePacman() {
     pacmanTimerId = setInterval(() => {
       // if (pacEatTimeout && pacGhostTimeout) {
-      //   clearInterval(pacEatTimeout, pacGhostTimeout);
+      //   clearTimeout(pacEatTimeout, pacGhostTimeout);
       // }
 
       // resolveDirection(nextDirection) -- use function with switch/case => return nextIndex
@@ -547,7 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // MOVE GHOST AND AVATAR
   function moveGhost(ghost) {
-    // move in allowed direction until an intersection, wall, or ghost
     squares[ghost.currentIndex].classList.remove(
       'ghost-index',
       'scared-ghost',
@@ -557,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'ghost-index',
       ghost.name
     );
+
     ghost.previousIndex = ghost.currentIndex;
     currentCoords = getGridCoordinates(ghost.currentIndex);
     ghost.currentIndex = ghost.currentDirection.nextIndex;
@@ -606,26 +605,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // INIT GHOST
   function initGhost(ghost) {
-    cl('Ghost init');
-    cl('Ghost.currentIndex: ' + ghost.currentIndex);
     // clear ghost timer just in case
-    // clearInterval(ghost.timerId);
+    console.log(ghost.name + ' init timerId: ' + ghost.timerId);
+
+    // clearTimeout(ghost.timerId);
     // ghost is now expected to be inside lair, move until exit
     if (ghost.currentIndex != lairExitIndex) {
       moveTowardTarget(ghost, lairExitIndex);
       ghost.timerId = setTimeout(initGhost, ghostSpeed, ghost);
     } else {
-      cl('Out of lair!');
       ghost.isRespawning = false;
-      clearInterval(ghost.timerId);
+      // clearTimeout(ghost.timerId);
       startGhostMovement(ghost);
     }
   }
 
   // MOVE TOWARD TARGET
   function moveTowardTarget(ghost, targetIndex) {
-    cl('Move toward target');
-
     // get target coords
     targetCoords = getGridCoordinates(targetIndex);
     // get current coords
@@ -639,9 +635,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (ifCoordsCloser(currentCoords, directionCoords, targetCoords)) {
         ghost.currentDirection = allowedDirection;
       }
-      moveGhost(ghost);
     });
-    //
+    moveGhost(ghost);
+
+    // return new Promise((resolve, reject) => {
+    //   if (ghost.currentIndex === targetIndex) {
+    //     console.log('reached Exit');
+    //     clearTimeout(ghost.timerId);
+    //     resolve();
+    //   } else {
+    //     // ghostMovement(ghost);
+    //     console.log('Still moving');
+    //     ghost.timerId = setTimeout(
+    //       moveTowardTarget,
+    //       ghostSpeed,
+    //       ghost,
+    //       targetIndex
+    //     );
+    //   }
+    // });
   }
 
   // CHECK IF COORDS ARE CLOSER TO TARGET
@@ -676,7 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // reset ghost and ghost grid index
     ghostPosition.classList.remove('ghost-index', 'scared-ghost', ghost.name);
     ghost.currentIndex = null;
-    clearInterval(ghost.timerId);
+    clearTimeout(ghost.timerId);
     // change avatar
     ghost.avatar.classList.remove('scared');
     ghost.avatar.classList.add('dead');
@@ -686,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // RESPAWN GHOST
   function respawnGhost(ghost) {
     ghost.isRespawning = true;
-    clearInterval(ghost.timerId);
+    clearTimeout(ghost.timerId);
 
     // 1. on ghost killed, fly the avatar back to lair
     flyBackToLair(ghost).then(() => {
@@ -701,9 +713,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // VICTORY
   function victory() {
     document.removeEventListener('keydown', changeDirection);
-    clearInterval(pacmanTimerId);
+    clearTimeout(pacmanTimerId);
     ghosts.forEach((ghost) => {
-      clearInterval(ghost.timerId);
+      clearTimeout(ghost.timerId);
     });
     alert('You win! Score: ' + score);
   }
@@ -711,12 +723,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // GAME OVER
   function gameOver() {
     squares[pacmanCurrentIndex].classList.add('pacman-deceased');
-    clearInterval(pacmanTimerId);
+    clearTimeout(pacmanTimerId);
     pacmanCurrentIndex = null;
     nextDirection = null;
     document.removeEventListener('keydown', changeDirection);
     ghosts.forEach((ghost) => {
-      clearInterval(ghost.timerId);
+      clearTimeout(ghost.timerId);
       ghost.currentIndex = null;
     });
     alert('You dieded!');
