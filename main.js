@@ -1,3 +1,5 @@
+'use-strict';
+
 document.addEventListener('DOMContentLoaded', () => {
   // SETUP layout variables
   const grid = document.getElementById('grid');
@@ -24,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let ghostSpeed = 200;
   let pacmanSpeed = 200;
   let pacEatTimeout = null;
-  let pacGhostTimeout = null;
+  // let pacGhostTimeout = null;
 
   //  LAYOUT
   // prettier-ignore
@@ -197,12 +199,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // GET FREE SPOT IN LAIR
+  function getLairSpot() {
+    console.log('getLairSpot START');
+
+    return new Promise((resolve, reject) => {
+      let respawnSpot = 348;
+
+      console.log('respawnSpot ' + respawnSpot);
+
+      if (squares[respawnSpot].classList.contains('ghost-index')) {
+        console.log('if respawnSpot ' + respawnSpot);
+
+        while (squares[respawnSpot].classList.contains('ghost-index')) {
+          console.log('while respawnSpot ' + respawnSpot);
+          respawnSpot++;
+          // reject();
+        }
+
+        console.log('resolved: ' + respawnSpot);
+        resolve(respawnSpot);
+      } else {
+        console.log('resolved: ' + respawnSpot);
+        resolve(respawnSpot);
+      }
+    });
+  }
+
   // Special Move avatar (fly to lair etc.)
   function flyBackToLair(ghost) {
     // get current coordinates for animation purposes
     const currentCoords = ghost.coordinates;
     // get first free spot in lair (or set index manually)
-    ghost.currentIndex = 349;
+    // ghost.currentIndex = getLairSpot();
+    // getLairSpot().then((respawnSpot) => {
+    //   return (ghost.currentIndex = respawnSpot);
+    // });
     const targetCoords = getGridCoordinates(ghost.currentIndex);
 
     let currX = currentCoords[0] * 20;
@@ -216,11 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // calc minimum distance between current and target using hypothenuse
     const distance = Math.sqrt(diffx * diffx + diffy * diffy);
-    calcSpeed = distance * 6;
-    // cl(distance);
-    // cl(calcSpeed);
+    const calcSpeed = distance * 6;
 
-    let flyAnimation = [
+    const flyAnimation = [
       {
         transform:
           'translateX(' +
@@ -256,20 +286,20 @@ document.addEventListener('DOMContentLoaded', () => {
           'px) translateZ(0) scale(1)',
       },
     ];
-    let flyTiming = {
+    const flyTiming = {
       duration: calcSpeed,
       easing: 'cubic-bezier(.6,.01,.44,1)',
       iterations: 1,
     };
 
-    flyAnim = ghost.avatar.animate(flyAnimation, flyTiming);
+    const flyAnim = ghost.avatar.animate(flyAnimation, flyTiming);
     flyAnim.play();
-    cl('Flying back');
+    console.log('Flying back');
 
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         flyAnim.finish();
-        cl('Flying finished');
+        console.log('Flying finished');
         resolve();
       }, calcSpeed);
     });
@@ -284,14 +314,17 @@ document.addEventListener('DOMContentLoaded', () => {
       iterations: 10,
       direction: 'alternate',
     };
-    blinkAnim = avatar.animate(animRespawning_props, animRespawning_timing);
+    const blinkAnim = avatar.animate(
+      animRespawning_props,
+      animRespawning_timing
+    );
     blinkAnim.play();
-    cl('Blinking');
+    console.log('Blinking');
 
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         blinkAnim.finish();
-        cl('de-blinking');
+        console.log('de-blinking');
         resolve();
       }, 3000);
     });
@@ -351,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pacdotEaten(pacmanCurrentIndex);
         powerPelletEaten(pacmanCurrentIndex);
       }, 100);
-      pacGhostTimeout = setTimeout(pacmanGhostEncounterCheck(), 100);
+      let pacGhostTimeout = setTimeout(pacmanGhostEncounterCheck(), 100);
     }, 200); // Repeat every X miliseconds, lower is faster
   }
 
@@ -512,11 +545,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const directionIndex = Math.floor(Math.random() * directions.length);
     // Math.random generates between 0 and 1, times directions.length
     const selectedDirection = directions[directionIndex];
-    // console.log('selectedDirection.nextIndex: ' + selectedDirection.nextIndex);
-    // console.log('ghost.previousIndex: ' + ghost.previousIndex);
-    // console.log(
-    //   'ghost.allowedDirections.length: ' + ghost.allowedDirections.length
-    // );
 
     // check if moving backwards: nextIndex === previousIndex
     if (selectedDirection.nextIndex === ghost.previousIndex) {
@@ -525,9 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ghost.currentDirection = selectedDirection;
       } else {
         ghost.allowedDirections.splice(directionIndex, 1);
-        // console.log('ghost.allowedDirections: ', ghost.allowedDirections);
-        // console.log('directions: ', directions);
-
         const selectedDirection =
           ghost.allowedDirections[
             Math.floor(Math.random() * directions.length)
@@ -557,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     ghost.previousIndex = ghost.currentIndex;
-    currentCoords = getGridCoordinates(ghost.currentIndex);
+    const currentCoords = getGridCoordinates(ghost.currentIndex);
     ghost.currentIndex = ghost.currentDirection.nextIndex;
     getCoordinates(ghost, ghost.currentIndex);
 
@@ -570,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
     moveAvatar(ghost, currentCoords, ghost.coordinates);
 
     // Check for ghost - Pacman encounter
-    pacGhostTimeout = setTimeout(pacmanGhostEncounterCheck(ghost), 100);
+    let pacGhostTimeout = setTimeout(pacmanGhostEncounterCheck(ghost), 100);
   }
 
   function ghostMovement(ghost) {
@@ -582,7 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Check if ghost was already moving in one direction
       // we want it to continue in same direction if not on intersection
       if (ghost.currentDirection.name) {
-        nextIndex = ghost.currentIndex + ghost.currentDirection.value;
+        const nextIndex = ghost.currentIndex + ghost.currentDirection.value;
         if (allowedMove(ghost, nextIndex)) {
           ghost.currentDirection.nextIndex = nextIndex;
         } else {
@@ -599,38 +624,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // MAIN MOVE GHOST FUNCTION
   function startGhostMovement(ghost) {
-    ghostMovement(ghost);
-    ghost.timerId = setTimeout(startGhostMovement, ghostSpeed, ghost);
+    if (!ghost.isRespawning) {
+      ghostMovement(ghost);
+      ghost.timerId = setTimeout(startGhostMovement, ghostSpeed, ghost);
+    }
   }
 
   // INIT GHOST
   function initGhost(ghost) {
-    // clear ghost timer just in case
-    console.log(ghost.name + ' init timerId: ' + ghost.timerId);
+    ghost.isRespawning = true;
 
-    // clearTimeout(ghost.timerId);
     // ghost is now expected to be inside lair, move until exit
-    if (ghost.currentIndex != lairExitIndex) {
-      moveTowardTarget(ghost, lairExitIndex);
-      ghost.timerId = setTimeout(initGhost, ghostSpeed, ghost);
-    } else {
+    if (ghost.currentIndex === lairExitIndex) {
       ghost.isRespawning = false;
       // clearTimeout(ghost.timerId);
       startGhostMovement(ghost);
+    } else {
+      moveTowardTarget(ghost, lairExitIndex);
+      ghost.timerId = setTimeout(initGhost, ghostSpeed, ghost);
     }
   }
 
   // MOVE TOWARD TARGET
   function moveTowardTarget(ghost, targetIndex) {
     // get target coords
-    targetCoords = getGridCoordinates(targetIndex);
+    const targetCoords = getGridCoordinates(targetIndex);
     // get current coords
-    currentCoords = getGridCoordinates(ghost.currentIndex);
+    const currentCoords = getGridCoordinates(ghost.currentIndex);
     // get allowed directions -> return allowed next indexes
     getAllowedDirections(ghost);
     // get coords for each allowed next index
     ghost.allowedDirections.forEach((allowedDirection) => {
-      directionCoords = getGridCoordinates(allowedDirection.nextIndex);
+      const directionCoords = getGridCoordinates(allowedDirection.nextIndex);
       // for each next coords calculate if closer to target coords
       if (ifCoordsCloser(currentCoords, directionCoords, targetCoords)) {
         ghost.currentDirection = allowedDirection;
@@ -674,7 +699,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // KILL GHOST
   function killGhost(ghost) {
-    ghostPosition = squares[ghost.currentIndex];
+    ghost.isRespawning = true;
+    clearTimeout(ghost.timerId);
+    ghost.allowedDirections = [];
+    ghost.direction = {};
+    const ghostPosition = squares[ghost.currentIndex];
+    // reset ghost and ghost grid index
+    ghostPosition.classList.remove('ghost-index', 'scared-ghost', ghost.name);
+    ghost.currentIndex = null;
+    // change avatar
+    ghost.avatar.classList.remove('scared');
+    ghost.avatar.classList.add('dead');
 
     // update score
     score += 100;
@@ -683,29 +718,24 @@ document.addEventListener('DOMContentLoaded', () => {
     ghostPosition.classList.add('ghost-score');
     setTimeout(() => {
       ghostPosition.classList.remove('ghost-score');
-    }, 400);
+    }, 1000);
 
-    // reset ghost and ghost grid index
-    ghostPosition.classList.remove('ghost-index', 'scared-ghost', ghost.name);
-    ghost.currentIndex = null;
-    clearTimeout(ghost.timerId);
-    // change avatar
-    ghost.avatar.classList.remove('scared');
-    ghost.avatar.classList.add('dead');
     respawnGhost(ghost);
   }
 
   // RESPAWN GHOST
   function respawnGhost(ghost) {
-    ghost.isRespawning = true;
-    clearTimeout(ghost.timerId);
+    getLairSpot().then((respawnSpot) => {
+      ghost.currentIndex = respawnSpot;
+      squares[ghost.currentIndex].classList.add('ghost-index', ghost.name);
 
-    // 1. on ghost killed, fly the avatar back to lair
-    flyBackToLair(ghost).then(() => {
-      // 2. after flying done -> blink anim and wait for cooldown period
-      animRespawning(ghost.avatar).then(() => {
-        // 3. after cooldown -> init ghost
-        initGhost(ghost);
+      // 1. on ghost killed, fly the avatar back to lair
+      flyBackToLair(ghost).then(() => {
+        // 2. after flying done -> blink anim and wait for cooldown period
+        animRespawning(ghost.avatar).then(() => {
+          // 3. after cooldown -> init ghost
+          initGhost(ghost);
+        });
       });
     });
   }
@@ -745,6 +775,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // CONSOLE LOG HELPER
   function cl(value) {
     return console.log(value);
+  }
+
+  // CONSOLE LOG ALL
+  function consoleLogAll(ghost, message) {
+    console.log(message);
+    // prettier-ignore
+    console.log(ghost.name 
+    +' /currentIndex: '+ghost.currentIndex 
+    +' /previousIndex: '+ghost.previousIndex 
+    +' /allowedDirections: '+ghost.allowedDirections
+    +' /currentDirection: ',ghost.currentDirection 
+    +' /timerId: '+ghost.timerId 
+    +' /isRespawning: '+ghost.isRespawning);
   }
 
   // START NEW GAME
@@ -807,19 +850,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // ghosts.forEach((ghost) => startGhostMovement(ghost));
     initGhost(ghosts[0]);
 
-    // // Get Pinky out of lair
+    // Get Pinky out of lair
     setTimeout(() => {
       initGhost(ghosts[1]);
     }, 3000);
 
-    // // Get Inky out of lair
-    // setTimeout(() => {
-    //   initGhost(ghosts[2]);
-    // }, 6000);
+    // Get Inky out of lair
+    setTimeout(() => {
+      initGhost(ghosts[2]);
+    }, 6000);
 
-    // // Get Clyde out of lair
-    // setTimeout(() => {
-    //   initGhost(ghosts[3]);
-    // }, 9000);
+    // Get Clyde out of lair
+    setTimeout(() => {
+      initGhost(ghosts[3]);
+    }, 9000);
   }
 });
