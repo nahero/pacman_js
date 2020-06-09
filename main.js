@@ -3,6 +3,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   // SETUP layout variables
   const grid = document.getElementById('grid');
+  const wallGrid = document.getElementById('walls');
   const scoreDisplay = document.getElementById('score');
   const pacdotDisplay = document.getElementById('pacdotNumber');
   const width = 28; // 28 x 28 = 784
@@ -85,11 +86,16 @@ document.addEventListener('DOMContentLoaded', () => {
       value: +width,
     },
   ];
+  const stop = {
+    name: 'stop',
+    value: 0,
+  };
 
   let currentDirection = directions[0]; // left
   let nextDirection = currentDirection;
 
   const squares = [];
+  const walls = [];
   let tempIntersections = 0;
 
   // CREATE BOARD FROM LAYOUT
@@ -97,7 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 0; i < layout.length; i++) {
       const square = document.createElement('div');
       grid.appendChild(square);
+      // wallGrid.appendChild(square);
       squares.push(square);
+      // walls.push(square);
 
       switch (layout[i]) {
         case 0:
@@ -115,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
           break;
         case 1:
           squares[i].classList.add('wall', i);
+          // walls[i].classList.add('wall', i);
           break;
         case 2:
           squares[i].classList.add('ghost-lair', i);
@@ -201,26 +210,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // GET FREE SPOT IN LAIR
   function getLairSpot() {
-    console.log('getLairSpot START');
-
+    let respawnSpot = 349;
     return new Promise((resolve, reject) => {
-      let respawnSpot = 348;
-
-      console.log('respawnSpot ' + respawnSpot);
-
       if (squares[respawnSpot].classList.contains('ghost-index')) {
-        console.log('if respawnSpot ' + respawnSpot);
-
         while (squares[respawnSpot].classList.contains('ghost-index')) {
-          console.log('while respawnSpot ' + respawnSpot);
           respawnSpot++;
-          // reject();
         }
-
-        console.log('resolved: ' + respawnSpot);
         resolve(respawnSpot);
       } else {
-        console.log('resolved: ' + respawnSpot);
         resolve(respawnSpot);
       }
     });
@@ -230,11 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function flyBackToLair(ghost) {
     // get current coordinates for animation purposes
     const currentCoords = ghost.coordinates;
-    // get first free spot in lair (or set index manually)
-    // ghost.currentIndex = getLairSpot();
-    // getLairSpot().then((respawnSpot) => {
-    //   return (ghost.currentIndex = respawnSpot);
-    // });
     const targetCoords = getGridCoordinates(ghost.currentIndex);
 
     let currX = currentCoords[0] * 20;
@@ -290,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
       duration: calcSpeed,
       easing: 'cubic-bezier(.6,.01,.44,1)',
       iterations: 1,
+      fill: 'forwards',
     };
 
     const flyAnim = ghost.avatar.animate(flyAnimation, flyTiming);
@@ -525,18 +518,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // first clear the allowedDirections array so we can store new ones
     ghost.allowedDirections = [];
 
-    // calculate all 4 directions from current position (currentIndex)
-    directions.forEach((direction) => {
-      nextIndex = ghost.currentIndex + direction.value;
+    while (ghost.allowedDirections.length === 0) {
+      // calculate all 4 directions from current position (currentIndex)
+      directions.forEach((direction) => {
+        nextIndex = ghost.currentIndex + direction.value;
 
-      // now check if ghost is allowed to move in that direction
-      // if allowed, store to ghost.allowedDirections array
-      // (this will change every ghost move interval)
-      if (allowedMove(ghost, nextIndex)) {
-        direction.nextIndex = nextIndex;
-        ghost.allowedDirections.push(direction);
-      }
-    });
+        // now check if ghost is allowed to move in that direction
+        // if allowed, store to ghost.allowedDirections array
+        // (this will change every ghost move interval)
+        if (allowedMove(ghost, nextIndex)) {
+          direction.nextIndex = nextIndex;
+          ghost.allowedDirections.push(direction);
+        }
+      });
+    }
   }
 
   // GHOST RANDOM SELECT AN ALLOWED DIRECTION
@@ -725,15 +720,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // RESPAWN GHOST
   function respawnGhost(ghost) {
+    // 1. get first free lair spot (for multiple killed ghosts)
     getLairSpot().then((respawnSpot) => {
       ghost.currentIndex = respawnSpot;
       squares[ghost.currentIndex].classList.add('ghost-index', ghost.name);
-
-      // 1. on ghost killed, fly the avatar back to lair
+      // 2. fly the avatar back to lair
       flyBackToLair(ghost).then(() => {
-        // 2. after flying done -> blink anim and wait for cooldown period
+        // 3. after flying done -> blink anim and wait for cooldown period
         animRespawning(ghost.avatar).then(() => {
-          // 3. after cooldown -> init ghost
+          // 4. after cooldown -> init ghost
           initGhost(ghost);
         });
       });
@@ -853,16 +848,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Get Pinky out of lair
     setTimeout(() => {
       initGhost(ghosts[1]);
-    }, 3000);
+    }, 1000);
 
     // Get Inky out of lair
     setTimeout(() => {
       initGhost(ghosts[2]);
-    }, 6000);
+    }, 1500);
 
     // Get Clyde out of lair
     setTimeout(() => {
       initGhost(ghosts[3]);
-    }, 9000);
+    }, 2000);
   }
 });

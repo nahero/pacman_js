@@ -13,6 +13,15 @@
   height: 20px;
 }
 
+#walls {
+  display: flex;
+  flex-wrap: wrap;
+  width: 560px;
+  height: 560px;
+  position: absolute;
+  z-index: 1;
+}
+
 .wall {
   background-color: teal;
 }
@@ -152,7 +161,7 @@
 .ghost-index {
   position: relative;
   z-index: 0;
-  background: grey;
+  /* background: grey; */
 }
 .ghost-index:before {
   /* content: ''; */
