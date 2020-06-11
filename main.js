@@ -86,10 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
       value: +width,
     },
   ];
-  const stop = {
-    name: 'stop',
-    value: 0,
-  };
 
   let currentDirection = directions[0]; // left
   let nextDirection = currentDirection;
