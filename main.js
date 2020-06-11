@@ -515,13 +515,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // GET ALLOWED DIRECTIONS based on current index
   function getAllowedDirections(ghost) {
+    console.log('getAllowedDirections', ghost.name);
+
     // first clear the allowedDirections array so we can store new ones
     ghost.allowedDirections = [];
+    // let nextIndex = 0;
 
-    while (ghost.allowedDirections.length === 0) {
+    if (ghost.allowedDirections.length === 0) {
       // calculate all 4 directions from current position (currentIndex)
       directions.forEach((direction) => {
-        nextIndex = ghost.currentIndex + direction.value;
+        let nextIndex = ghost.currentIndex + direction.value;
 
         // now check if ghost is allowed to move in that direction
         // if allowed, store to ghost.allowedDirections array
@@ -532,31 +535,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+    console.log('getallowed END');
   }
 
   // GHOST RANDOM SELECT AN ALLOWED DIRECTION
   function selectDirection(ghost) {
-    const directions = ghost.allowedDirections;
-    const directionIndex = Math.floor(Math.random() * directions.length);
-    // Math.random generates between 0 and 1, times directions.length
-    const selectedDirection = directions[directionIndex];
+    console.log('selectDirection START', ghost.name);
 
-    // check if moving backwards: nextIndex === previousIndex
-    if (selectedDirection.nextIndex === ghost.previousIndex) {
-      // is moving backwards the only option?
-      if (ghost.allowedDirections.length === 1) {
-        ghost.currentDirection = selectedDirection;
+    const directions = ghost.allowedDirections;
+    if (ghost.allowedDirections.length > 0) {
+      const directionIndex = Math.floor(Math.random() * directions.length);
+      // Math.random generates between 0 and 1, times directions.length
+      const selectedDirection = directions[directionIndex];
+
+      // check if moving backwards: nextIndex === previousIndex
+      if (selectedDirection.nextIndex === ghost.previousIndex) {
+        // is moving backwards the only option?
+        if (ghost.allowedDirections.length === 1) {
+          ghost.currentDirection = selectedDirection;
+        } else {
+          ghost.allowedDirections.splice(directionIndex, 1);
+          const selectedDirection =
+            ghost.allowedDirections[
+              Math.floor(Math.random() * directions.length)
+            ];
+          ghost.currentDirection = selectedDirection;
+        }
       } else {
-        ghost.allowedDirections.splice(directionIndex, 1);
-        const selectedDirection =
-          ghost.allowedDirections[
-            Math.floor(Math.random() * directions.length)
-          ];
         ghost.currentDirection = selectedDirection;
       }
     } else {
-      ghost.currentDirection = selectedDirection;
+      console.log('No allowed direction' + ghost.name);
     }
+    console.log('selectDirection END');
   }
 
   // CHECK FOR INTERSECTION returns true or false
@@ -614,7 +625,15 @@ document.addEventListener('DOMContentLoaded', () => {
         selectDirection(ghost);
       }
     }
-    moveGhost(ghost);
+
+    if (ghost.allowedDirections.length > 0) {
+      moveGhost(ghost);
+    } else {
+      console.log(
+        ghost.name + ' no allowed directions:',
+        ghost.allowedDirections
+      );
+    }
   }
 
   // MAIN MOVE GHOST FUNCTION
@@ -648,15 +667,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentCoords = getGridCoordinates(ghost.currentIndex);
     // get allowed directions -> return allowed next indexes
     getAllowedDirections(ghost);
-    // get coords for each allowed next index
-    ghost.allowedDirections.forEach((allowedDirection) => {
-      const directionCoords = getGridCoordinates(allowedDirection.nextIndex);
-      // for each next coords calculate if closer to target coords
-      if (ifCoordsCloser(currentCoords, directionCoords, targetCoords)) {
-        ghost.currentDirection = allowedDirection;
-      }
-    });
-    moveGhost(ghost);
+    // check if ghost is stuck (no allowed directions)
+    if (ghost.allowedDirections.length > 0) {
+      // get coords for each allowed next index
+      ghost.allowedDirections.forEach((allowedDirection) => {
+        const directionCoords = getGridCoordinates(allowedDirection.nextIndex);
+        // for each next coords calculate if closer to target coords
+        if (ifCoordsCloser(currentCoords, directionCoords, targetCoords)) {
+          ghost.currentDirection = allowedDirection;
+        }
+      });
+      moveGhost(ghost);
+    } else {
+      console.log(ghost.name + " can't move", ghost.allowedDirections);
+    }
 
     // return new Promise((resolve, reject) => {
     //   if (ghost.currentIndex === targetIndex) {
@@ -853,11 +877,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Get Inky out of lair
     setTimeout(() => {
       initGhost(ghosts[2]);
-    }, 1500);
+    }, 2000);
 
     // Get Clyde out of lair
     setTimeout(() => {
       initGhost(ghosts[3]);
-    }, 2000);
+    }, 3000);
   }
 });
