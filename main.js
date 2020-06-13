@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,2,2,1,1,1,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,2,2,2,2,1,1,4,1,1,0,1,1,1,1,1,1,
-    5,4,4,4,4,4,3,0,0,4,1,1,1,1,1,1,1,1,4,0,0,0,4,4,4,4,4,6,
+    5,4,4,4,4,4,0,0,0,4,1,1,1,1,1,1,1,1,4,0,0,0,4,4,4,4,4,6,
     1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,1,1,1,1,1,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,1,1,1,1,1,4,1,1,0,1,1,1,1,1,1,
@@ -468,14 +468,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Visually move Pacman
     // Pacman is separated from pacman-index (actual place on grid) for fluent movement animation
     getCoordinates('pacman', nextIndex);
-    // if moving to tunnel spot
-
+    // if moving through tunnel
     if (
       (pacmanCurrentIndex === 364 && nextIndex === 391) ||
       (pacmanCurrentIndex === 391 && nextIndex === 364)
     ) {
       tunnelMoveAvatar('pacman', pacmanCurrentCoords, pacmanCoordinates);
     } else {
+      // else move normally
       moveAvatar('pacman', pacmanCurrentCoords, pacmanCoordinates);
     }
     pacmanCurrentIndex = nextIndex;
@@ -514,7 +514,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (
         list.contains('wall') ||
         list.contains('ghost-index') ||
-        list.contains('tunnel') ||
         (!actor.isRespawning && list.contains('ghost-lair'))
       ) {
         return false;
@@ -668,8 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ghost.previousIndex = ghost.currentIndex;
     const currentCoords = getGridCoordinates(ghost.currentIndex);
-    ghost.currentIndex = ghost.currentDirection.nextIndex;
-    getCoordinates(ghost, ghost.currentIndex);
+    getCoordinates(ghost, ghost.currentDirection.nextIndex);
 
     // check if ghost is scared
     if (ghost.isScared && !ghost.isRespawning) {
@@ -677,41 +675,74 @@ document.addEventListener('DOMContentLoaded', () => {
       ghost.avatar.classList.add('scared');
     }
 
-    moveAvatar(ghost, currentCoords, ghost.coordinates);
+    // if moving through tunnel
+    if (
+      (ghost.currentIndex === 364 &&
+        ghost.currentDirection.nextIndex === 391) ||
+      (ghost.currentIndex === 391 && ghost.currentDirection.nextIndex === 364)
+    ) {
+      tunnelMoveAvatar(ghost, currentCoords, ghost.coordinates);
+    } else {
+      // else move normally
+      moveAvatar(ghost, currentCoords, ghost.coordinates);
+    }
+
+    ghost.currentIndex = ghost.currentDirection.nextIndex;
 
     // Check for ghost - Pacman encounter
     let pacGhostTimeout = setTimeout(pacmanGhostEncounterCheck(ghost), 100);
   }
 
   function ghostMovement(ghost) {
-    // Check for intersection
-    if (onIntersection(ghost.currentIndex)) {
-      getAllowedDirections(ghost);
-      selectDirection(ghost);
+    const currentGridSpotClass = squares[ghost.currentIndex].classList;
+
+    // is ghost currently on tunnel spot and moving into tunnel?
+    if (
+      (currentGridSpotClass.contains('tunnel-left') &&
+        ghost.currentDirection.name === 'left') ||
+      (currentGridSpotClass.contains('tunnel-right') &&
+        ghost.currentDirection.name === 'right')
+    ) {
+      // is ghost currently on tunnel-left and moving left?
+      if (
+        currentGridSpotClass.contains('tunnel-left') &&
+        ghost.currentDirection.name === 'left'
+      ) {
+        // set next index to tunnel-right spot, keep direction
+        ghost.currentDirection.nextIndex = 391;
+        moveGhost(ghost);
+      } else {
+        // set next index to tunnel-left spot, keep direction
+        ghost.currentDirection.nextIndex = 364;
+        moveGhost(ghost);
+      }
     } else {
-      // Check if ghost was already moving in one direction
-      // we want it to continue in same direction if not on intersection
-      if (ghost.currentDirection.name) {
-        const nextIndex = ghost.currentIndex + ghost.currentDirection.value;
-        if (allowedMove(ghost, nextIndex)) {
-          ghost.currentDirection.nextIndex = nextIndex;
+      // Check for intersection
+      if (onIntersection(ghost.currentIndex)) {
+        getAllowedDirections(ghost);
+        selectDirection(ghost);
+      } else {
+        // Check if ghost was already moving in one direction
+        // we want it to continue in same direction if not on intersection
+        if (ghost.currentDirection.name) {
+          const nextIndex = ghost.currentIndex + ghost.currentDirection.value;
+          if (allowedMove(ghost, nextIndex)) {
+            ghost.currentDirection.nextIndex = nextIndex;
+          } else {
+            getAllowedDirections(ghost);
+            selectDirection(ghost);
+          }
         } else {
           getAllowedDirections(ghost);
           selectDirection(ghost);
         }
-      } else {
-        getAllowedDirections(ghost);
-        selectDirection(ghost);
       }
-    }
 
-    if (ghost.allowedDirections.length > 0) {
-      moveGhost(ghost);
-    } else {
-      console.log(
-        ghost.name + ' no allowed directions:',
-        ghost.allowedDirections
-      );
+      // check if ghost is stuck (no allowed directions)
+      // if not stuck then move, otherwise do nothing (stop for a cycle)
+      if (ghost.allowedDirections.length > 0) {
+        moveGhost(ghost);
+      }
     }
   }
 
