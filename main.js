@@ -18,16 +18,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const ghostAvatars = [];
   ghostAvatars.push(blinky, pinky, inky, clyde);
   const lairExitIndex = 293;
+  const ghostDefaultSpeed = 200;
+  const pacmanSpeed = 200;
 
   // SETUP dynamic variables
   let score = 0;
   let pacmanCurrentIndex = 0;
   let pacdotNumber = 0;
   let pacmanCoordinates = [];
-  let ghostSpeed = 200;
-  let pacmanSpeed = 200;
-  let pacEatTimeout = null;
-  // let pacGhostTimeout = null;
 
   //  LAYOUT
   // prettier-ignore
@@ -45,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,2,2,1,1,1,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,2,2,2,2,1,1,4,1,1,0,1,1,1,1,1,1,
-    4,4,4,4,4,4,3,0,0,4,1,1,1,1,1,1,1,1,4,0,0,0,4,4,4,4,4,4,
+    5,4,4,4,4,4,3,0,0,4,1,1,1,1,1,1,1,1,4,0,0,0,4,4,4,4,4,6,
     1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,1,1,1,1,1,4,1,1,0,1,1,1,1,1,1,
     1,1,1,1,1,1,0,1,1,4,1,1,1,1,1,1,1,1,4,1,1,0,1,1,1,1,1,1,
@@ -66,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2 - ghost-lair
   // 3 - power-pellet
   // 4 - empty
+  // 5 - tunnel left
+  // 6 - tunnel right
 
   // DEFINE POSSIBLE DIRECTIONS
   const directions = [
@@ -139,6 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
             squares[i].classList.add('intersection');
           }
           break;
+        case 5:
+          squares[i].classList.add('tunnel-left', i);
+          break;
+        case 6:
+          squares[i].classList.add('tunnel-right', i);
+          break;
       }
     }
   }
@@ -155,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
       this.allowedDirections = [];
       this.currentDirection = {};
       this.timerId = NaN;
+      this.speed = ghostDefaultSpeed;
       this.isScared = false;
       this.isRespawning = true;
       this.avatar = null;
@@ -188,8 +195,53 @@ document.addEventListener('DOMContentLoaded', () => {
       { transform: 'translateX(' + x + 'px) translateY(' + y + 'px)' },
     ];
     let moveTiming = {
-      duration: ghostSpeed,
+      duration: actor.speed,
       iterations: 1,
+      fill: 'forwards',
+    };
+
+    if (actor === 'pacman') {
+      // set pacman timing separate from ghosts (onGhostScared changes speed)
+      moveTiming.duration = pacmanSpeed;
+      pacAvatarMoveAnimation = pacAvatar.animate(moveProps, moveTiming);
+      pacAvatarMoveAnimation.play();
+    } else {
+      ghostAvatarMoveAnimation = actor.avatar.animate(moveProps, moveTiming);
+      ghostAvatarMoveAnimation.play();
+    }
+  }
+
+  // Tunnel move avatar
+  function tunnelMoveAvatar(actor, currentCoords, targetCoords) {
+    let currX = currentCoords[0] * 20;
+    let currY = currentCoords[1] * 20;
+    let x = targetCoords[0] * 20;
+    let y = targetCoords[1] * 20;
+
+    let moveProps = [
+      {
+        transform: 'translateX(' + currX + 'px) translateY(' + currY + 'px)',
+        opacity: 1,
+      },
+      {
+        transform: 'translateX(' + currX + 'px) translateY(' + currY + 'px)',
+        opacity: 0,
+        offset: 0.49,
+      },
+      {
+        transform: 'translateX(' + x + 'px) translateY(' + y + 'px)',
+        opacity: 0,
+        offset: 0.5,
+      },
+      {
+        transform: 'translateX(' + x + 'px) translateY(' + y + 'px)',
+        opacity: 1,
+      },
+    ];
+    let moveTiming = {
+      duration: actor.speed,
+      iterations: 1,
+      // easing: 'steps(1, end)',
       fill: 'forwards',
     };
 
@@ -343,29 +395,47 @@ document.addEventListener('DOMContentLoaded', () => {
   // Auto move Pacman
   function autoMovePacman() {
     pacmanTimerId = setInterval(() => {
-      // if (pacEatTimeout && pacGhostTimeout) {
-      //   clearTimeout(pacEatTimeout, pacGhostTimeout);
-      // }
-
-      // resolveDirection(nextDirection) -- use function with switch/case => return nextIndex
-      resolveNextIndex('pacman', nextDirection);
-
-      // check is nextIndex allowed
-      if (!allowedMove('pacman', nextIndex)) {
-        // --> NOT allowed -> resolveDirection(currentDirection) => return nextIndex
-        resolveNextIndex('pacman', currentDirection);
-        // check is nextIndex allowed
-        if (!allowedMove('pacman', nextIndex)) {
-          // --> NOT allowed -> STOP (return currentIndex)
-          return;
-          // --> IS allowed -> MOVE (currentIndex = nextIndex)
+      const currentGridSpotClass = squares[pacmanCurrentIndex].classList;
+      // is pacman currently on tunnel spot and moving into tunnel?
+      if (
+        (currentGridSpotClass.contains('tunnel-left') &&
+          currentDirection === directions[0]) ||
+        (currentGridSpotClass.contains('tunnel-right') &&
+          currentDirection === directions[1])
+      ) {
+        // is pacman currently on tunnel-left and moving left?
+        if (
+          currentGridSpotClass.contains('tunnel-left') &&
+          currentDirection === directions[0]
+        ) {
+          // set next index to tunnel-right spot, keep direction
+          nextIndex = 391;
+          move(nextIndex);
         } else {
+          // set next index to tunnel-left spot, keep direction
+          nextIndex = 364;
           move(nextIndex);
         }
-        // --> IS allowed -> MOVE (currentIndex = nextIndex), also currentDirection = nextDirection;
       } else {
-        move(nextIndex);
-        currentDirection = nextDirection;
+        // resolveDirection(nextDirection) -- use function with switch/case => return nextIndex
+        resolveNextIndex('pacman', nextDirection);
+        // check is nextIndex allowed
+        if (!allowedMove('pacman', nextIndex)) {
+          // --> NOT allowed -> resolveDirection(currentDirection) => return nextIndex
+          resolveNextIndex('pacman', currentDirection);
+          // check is nextIndex allowed
+          if (!allowedMove('pacman', nextIndex)) {
+            // --> NOT allowed -> STOP (return currentIndex)
+            return;
+            // --> IS allowed -> MOVE (currentIndex = nextIndex)
+          } else {
+            move(nextIndex);
+          }
+          // --> IS allowed -> MOVE (currentIndex = nextIndex), also currentDirection = nextDirection;
+        } else {
+          move(nextIndex);
+          currentDirection = nextDirection;
+        }
       }
 
       // Delay action by about half of movement speed, so the effect of moving matches the visual movement
@@ -388,18 +458,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Execute move Pacman
   function move(nextIndex) {
     squares[pacmanCurrentIndex].classList.remove('pacman-index');
     squares[nextIndex].classList.add('pacman-index');
     // get grid coordinates on current index before it gets changed in move()
     pacmanCurrentCoords = getGridCoordinates(pacmanCurrentIndex);
-    pacmanCurrentIndex = nextIndex;
+
     // Visually move Pacman
     // Pacman is separated from pacman-index (actual place on grid) for fluent movement animation
-    getCoordinates('pacman', pacmanCurrentIndex);
-    moveAvatar('pacman', pacmanCurrentCoords, pacmanCoordinates);
+    getCoordinates('pacman', nextIndex);
+    // if moving to tunnel spot
+
+    if (
+      (pacmanCurrentIndex === 364 && nextIndex === 391) ||
+      (pacmanCurrentIndex === 391 && nextIndex === 364)
+    ) {
+      tunnelMoveAvatar('pacman', pacmanCurrentCoords, pacmanCoordinates);
+    } else {
+      moveAvatar('pacman', pacmanCurrentCoords, pacmanCoordinates);
+    }
+    pacmanCurrentIndex = nextIndex;
   }
 
+  // Bind keyboard event to change Pacman direction
   function changeDirection(e) {
     switch (e.keyCode) {
       // Left
@@ -481,17 +563,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // status can be true or false (scared or not)
   function scaredGhostsToggle(status) {
     // change speed (lower is faster)
-    ghostSpeed = status ? 300 : 200;
+    tempGhostSpeed = status ? 300 : 200;
     // toggle scared class and transition speed
     ghosts.forEach((ghost) => {
       ghost.isScared = ghost.isRespawning ? false : status;
+      ghost.speed = ghost.isRespawning ? ghostDefaultSpeed : tempGhostSpeed;
       if (status && !ghost.isRespawning) {
         ghost.avatar.classList.add('scared');
       } else {
         ghost.avatar.classList.remove('scared');
       }
       ghost.avatar.style.transition =
-        'transform ' + ghostSpeed / 1000 + 's linear';
+        'transform ' + ghost.speed / 1000 + 's linear';
     });
   }
 
@@ -636,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function startGhostMovement(ghost) {
     if (!ghost.isRespawning) {
       ghostMovement(ghost);
-      ghost.timerId = setTimeout(startGhostMovement, ghostSpeed, ghost);
+      ghost.timerId = setTimeout(startGhostMovement, ghost.speed, ghost);
     }
   }
 
@@ -651,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
       startGhostMovement(ghost);
     } else {
       moveTowardTarget(ghost, lairExitIndex);
-      ghost.timerId = setTimeout(initGhost, ghostSpeed, ghost);
+      ghost.timerId = setTimeout(initGhost, ghost.speed, ghost);
     }
   }
 
@@ -714,10 +797,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // KILL GHOST
   function killGhost(ghost) {
-    ghost.isRespawning = true;
-    clearTimeout(ghost.timerId);
-    ghost.allowedDirections = [];
-    ghost.direction = {};
+    // Reset ghost attributes (timer, allowed directions...)
+    resetGhost(ghost);
+
     const ghostPosition = squares[ghost.currentIndex];
     // reset ghost and ghost grid index
     ghostPosition.classList.remove('ghost-index', 'scared-ghost', ghost.name);
@@ -753,6 +835,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     });
+  }
+
+  // Reset ghost attributes helper
+  function resetGhost(ghost) {
+    ghost.isRespawning = true;
+    ghost.isScared = false;
+    ghost.speed = ghostDefaultSpeed;
+    clearTimeout(ghost.timerId);
+    ghost.allowedDirections = [];
+    ghost.direction = {};
   }
 
   // VICTORY
@@ -839,16 +931,22 @@ document.addEventListener('DOMContentLoaded', () => {
       new Ghost('inky', 350),
       new Ghost('clyde', 351),
     ];
-    ghosts.forEach((ghost) => {
-      getCoordinates(ghost, ghost.startIndex);
-      ghost.avatar = selectAvatar(ghost);
-      placeAvatar(ghost, ghost.coordinates);
-    });
 
-    // GHOSTS STARTING POSITIONS
-    ghosts.forEach((ghost) => {
-      squares[ghost.startIndex].classList.add('ghost-index', ghost.name);
-    });
+    function initializeGhosts() {
+      ghosts.forEach((ghost) => {
+        // Add ghost to grid
+        squares[ghost.startIndex].classList.add('ghost-index', ghost.name);
+        // Place ghost avatars
+        getCoordinates(ghost, ghost.startIndex);
+        ghost.avatar = selectAvatar(ghost);
+        placeAvatar(ghost, ghost.coordinates);
+        // Set ghost speed
+        ghost.speed = ghostDefaultSpeed;
+      });
+    }
+
+    // CALL INIT GHOSTS
+    initializeGhosts();
 
     // START MOVING PACMAN
     autoMovePacman();
