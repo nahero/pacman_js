@@ -156,7 +156,7 @@
 }
 
 .ghost.scared-ghost {
-  background-color: aqua;
+  /* background-color: aqua; */
 }
 .ghost-index {
   position: relative;
@@ -180,7 +180,8 @@
 }
 .ghost.scared {
   background-color: aqua !important;
-  animation: anim_scaredGhost 0.25s linear 7s alternate 12 both;
+  border-color: blue !important;
+  /* animation: anim_scaredGhost 0.25s linear 7s alternate 12 both; */
 }
 .ghost.dead {
   /* border: 3px solid black !important; */

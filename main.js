@@ -18,14 +18,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const ghostAvatars = [];
   ghostAvatars.push(blinky, pinky, inky, clyde);
   const lairExitIndex = 293;
-  const ghostDefaultSpeed = 200;
-  const pacmanSpeed = 200;
+  const ghostDefaultSpeed = 150;
+  const ghostScaredSpeed = 250;
+  const pacmanSpeed = 150;
 
   // SETUP dynamic variables
   let score = 0;
   let pacmanCurrentIndex = 0;
   let pacdotNumber = 0;
   let pacmanCoordinates = [];
+  let scaredModifier = false;
+  let scaredToggleTimer = null;
+  let scaredEndAnimTimer = null;
 
   //  LAYOUT
   // prettier-ignore
@@ -149,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // createBoard();
   // GHOSTS
   class Ghost {
     constructor(name, startIndex) {
@@ -335,12 +338,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const flyAnim = ghost.avatar.animate(flyAnimation, flyTiming);
     flyAnim.play();
-    console.log('Flying back');
 
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         flyAnim.finish();
-        console.log('Flying finished');
         resolve();
       }, calcSpeed);
     });
@@ -360,12 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
       animRespawning_timing
     );
     blinkAnim.play();
-    console.log('Blinking');
 
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         blinkAnim.finish();
-        console.log('de-blinking');
         resolve();
       }, 3000);
     });
@@ -442,9 +441,12 @@ document.addEventListener('DOMContentLoaded', () => {
       pacEatTimeout = setTimeout(() => {
         pacdotEaten(pacmanCurrentIndex);
         powerPelletEaten(pacmanCurrentIndex);
-      }, 100);
-      let pacGhostTimeout = setTimeout(pacmanGhostEncounterCheck(), 100);
-    }, 200); // Repeat every X miliseconds, lower is faster
+      }, pacmanSpeed / 2);
+      let pacGhostTimeout = setTimeout(
+        pacmanGhostEncounterCheck(),
+        pacmanSpeed / 2
+      );
+    }, pacmanSpeed); // Repeat every X miliseconds, lower is faster
   }
 
   // Ghost encounter
@@ -552,17 +554,15 @@ document.addEventListener('DOMContentLoaded', () => {
       score += 10;
       // scare ghosts
       scaredGhostsToggle(true);
-      setTimeout(() => {
-        scaredGhostsToggle(false);
-      }, 10000);
     }
   }
 
   // TOGGLE SCARED GHOSTS
   // status can be true or false (scared or not)
   function scaredGhostsToggle(status) {
+    scaredModifier = status;
     // change speed (lower is faster)
-    tempGhostSpeed = status ? 300 : 200;
+    tempGhostSpeed = status ? ghostScaredSpeed : ghostDefaultSpeed;
     // toggle scared class and transition speed
     ghosts.forEach((ghost) => {
       ghost.isScared = ghost.isRespawning ? false : status;
@@ -572,9 +572,49 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         ghost.avatar.classList.remove('scared');
       }
-      ghost.avatar.style.transition =
-        'transform ' + ghost.speed / 1000 + 's linear';
+      // ghost.avatar.style.transition =
+      //   'transform ' + ghost.speed / 1000 + 's linear';
     });
+
+    if (status) {
+      if (scaredToggleTimer) {
+        clearTimeout(scaredToggleTimer);
+        clearTimeout(scaredEndAnimTimer);
+      }
+      scaredEndAnimTimer = setTimeout(() => {
+        animateScaredEnd(true);
+      }, 7000);
+      scaredToggleTimer = setTimeout(() => {
+        scaredModifier = !scaredModifier;
+        scaredGhostsToggle(false);
+        animateScaredEnd(false);
+      }, 10000);
+    }
+  }
+
+  // Scared end animation
+  function animateScaredEnd(status) {
+    let scaredAnimProps = [
+      { borderColor: 'lightskyblue', backgroundColor: 'aqua' },
+      { borderColor: 'blue', backgroundColor: 'aqua' },
+    ];
+    let scaredAnimTiming = {
+      duration: 200,
+      iterations: 15,
+      direction: 'alternate',
+      // fill: 'forwards',
+    };
+    ghosts.forEach((ghost) => {
+      ghostScaredEndAnimation = ghost.avatar.animate(
+        scaredAnimProps,
+        scaredAnimTiming
+      );
+    });
+    if (status) {
+      ghostScaredEndAnimation.play();
+    } else {
+      ghostScaredEndAnimation.finish();
+    }
   }
 
   // SELECT AVATAR HELPER FUNCTION
@@ -593,7 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // GET ALLOWED DIRECTIONS based on current index
   function getAllowedDirections(ghost) {
-    console.log('getAllowedDirections', ghost.name);
+    // console.log('getAllowedDirections', ghost.name);
 
     // first clear the allowedDirections array so we can store new ones
     ghost.allowedDirections = [];
@@ -613,12 +653,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
-    console.log('getallowed END');
+    // console.log('getallowed END');
   }
 
   // GHOST RANDOM SELECT AN ALLOWED DIRECTION
   function selectDirection(ghost) {
-    console.log('selectDirection START', ghost.name);
+    // console.log('selectDirection START', ghost.name);
 
     const directions = ghost.allowedDirections;
     if (ghost.allowedDirections.length > 0) {
@@ -643,9 +683,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ghost.currentDirection = selectedDirection;
       }
     } else {
-      console.log('No allowed direction' + ghost.name);
+      // console.log('No allowed direction' + ghost.name);
     }
-    console.log('selectDirection END');
+    // console.log('selectDirection END');
   }
 
   // CHECK FOR INTERSECTION returns true or false
