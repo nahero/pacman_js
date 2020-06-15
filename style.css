@@ -175,7 +175,7 @@
   border: 2px solid;
   border-radius: 10px;
   transform-origin: center;
-  will-change: transform filter;
+  will-change: transform filter background-color border-color;
   /* transition: transform 0.2s linear; */
 }
 .ghost.scared {

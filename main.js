@@ -580,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (scaredToggleTimer) {
         clearTimeout(scaredToggleTimer);
         clearTimeout(scaredEndAnimTimer);
+        animateScaredEnd(false);
       }
       scaredEndAnimTimer = setTimeout(() => {
         animateScaredEnd(true);
@@ -602,19 +603,21 @@ document.addEventListener('DOMContentLoaded', () => {
       duration: 200,
       iterations: 15,
       direction: 'alternate',
-      // fill: 'forwards',
+      // fill: 'none',
     };
     ghosts.forEach((ghost) => {
-      ghostScaredEndAnimation = ghost.avatar.animate(
-        scaredAnimProps,
-        scaredAnimTiming
-      );
+      if (ghost.isScared) {
+        ghostScaredEndAnimation = ghost.avatar.animate(
+          scaredAnimProps,
+          scaredAnimTiming
+        );
+        if (status) {
+          ghostScaredEndAnimation.play();
+        } else {
+          ghostScaredEndAnimation.finish();
+        }
+      }
     });
-    if (status) {
-      ghostScaredEndAnimation.play();
-    } else {
-      ghostScaredEndAnimation.finish();
-    }
   }
 
   // SELECT AVATAR HELPER FUNCTION
