@@ -1,6 +1,8 @@
 'use-strict';
 
 document.addEventListener('DOMContentLoaded', () => {
+  var easystar = new EasyStar.js();
+
   // SETUP layout variables
   const grid = document.getElementById('grid');
   const wallGrid = document.getElementById('walls');
@@ -63,6 +65,37 @@ document.addEventListener('DOMContentLoaded', () => {
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
   ]
+  // prettier-ignore
+  const layoutAlt = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+    [1,3,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,3,1],
+    [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+    [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+    [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,4,1,1,1,2,2,1,1,1,4,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,4,1,1,2,2,2,2,1,1,4,1,1,0,1,1,1,1,1,1],
+    [5,4,4,4,4,4,0,0,0,4,1,1,1,1,1,1,1,1,4,0,0,0,4,4,4,4,4,6],
+    [1,1,1,1,1,1,0,1,1,4,4,4,4,4,4,4,4,4,4,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,4,1,1,1,1,1,1,1,1,4,1,1,0,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,1,1,4,1,1,1,1,1,1,1,1,4,1,1,0,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,4,4,4,4,1,1,4,4,4,4,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+    [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+    [1,3,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,3,1],
+    [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+    [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+    [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
+    [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+    [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  ]
   // 0 - pac-dots
   // 1 - wall
   // 2 - ghost-lair
@@ -70,6 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4 - empty
   // 5 - tunnel left
   // 6 - tunnel right
+
+  // EasyStar Pathfinding plugin config
+  easystar.setGrid(layoutAlt);
+  // easystar.setGrid(twoDimensionalArray);
+  easystar.setAcceptableTiles([0, 3, 4]);
+  // easystar.setAcceptableTiles(arrayOfAcceptableTiles);
 
   // DEFINE POSSIBLE DIRECTIONS
   const directions = [
@@ -113,7 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
           tempIntersections = 0;
           directions.forEach((direction) => {
             j = i + direction.value;
-            if (layout[j] == 0 || layout[j] == 4) {
+            // if (layout[j] == 0 || layout[j] == 4) {
+            if ([0, 4].includes(layout[j])) {
               tempIntersections++;
             }
           });
@@ -389,6 +429,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function testCoordinates(index) {
     coordinates = [index % width, Math.floor(index / width)];
     cl(coordinates);
+  }
+
+  // Get index from coordinates
+  function getIndex(x, y) {
+    index = y * width + x;
+    return index;
   }
 
   // Auto move Pacman
@@ -792,7 +838,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // MAIN MOVE GHOST FUNCTION
   function startGhostMovement(ghost) {
     if (!ghost.isRespawning) {
-      ghostMovement(ghost);
+      // ghostMovement(ghost);
+      ghostMoveToPath(ghosts[0]);
       ghost.timerId = setTimeout(startGhostMovement, ghost.speed, ghost);
     }
   }
@@ -804,7 +851,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ghost is now expected to be inside lair, move until exit
     if (ghost.currentIndex === lairExitIndex) {
       ghost.isRespawning = false;
-      // clearTimeout(ghost.timerId);
       startGhostMovement(ghost);
     } else {
       moveTowardTarget(ghost, lairExitIndex);
@@ -867,6 +913,44 @@ document.addEventListener('DOMContentLoaded', () => {
     ) {
       return true;
     } else return false;
+  }
+
+  // FIND PATH
+  function ghostMoveToPath(ghost) {
+    const ghostCoords = getGridCoordinates(ghost.currentIndex);
+    const pacmanCoords = getGridCoordinates(pacmanCurrentIndex);
+    const ghostX = ghostCoords[0];
+    const ghostY = ghostCoords[1];
+    const pacX = pacmanCoords[0];
+    const pacY = pacmanCoords[1];
+
+    easystar.findPath(ghostX, ghostY, pacX, pacY, pathCallback);
+
+    function pathCallback(path) {
+      if (path === null) {
+        console.log('Path was not found.');
+        console.log('Path: ' + path);
+      } else {
+        console.log(
+          'Path was found. The first Point is ' + path[0].x + ' ' + path[0].y
+        );
+
+        // PATH MOVEMENT
+        const nextIndex = getIndex(path[0].x, path[0].y);
+        ghost.currentDirection.nextIndex = nextIndex;
+        moveGhost(ghost);
+
+        // LIGHT THE PATH :)
+        path.forEach((gridSpot) => {
+          let gridIndex = getIndex(gridSpot.x, gridSpot.y);
+          squares[gridIndex].classList.add('allowed-move');
+          setTimeout(() => {
+            squares[gridIndex].classList.remove('allowed-move');
+          }, ghost.speed - 20);
+        });
+      }
+    }
+    easystar.calculate();
   }
 
   // KILL GHOST
@@ -1038,18 +1122,18 @@ document.addEventListener('DOMContentLoaded', () => {
     initGhost(ghosts[0]);
 
     // Get Pinky out of lair
-    setTimeout(() => {
-      initGhost(ghosts[1]);
-    }, 1000);
+    // setTimeout(() => {
+    //   initGhost(ghosts[1]);
+    // }, 1000);
 
-    // Get Inky out of lair
-    setTimeout(() => {
-      initGhost(ghosts[2]);
-    }, 2000);
+    // // Get Inky out of lair
+    // setTimeout(() => {
+    //   initGhost(ghosts[2]);
+    // }, 2000);
 
-    // Get Clyde out of lair
-    setTimeout(() => {
-      initGhost(ghosts[3]);
-    }, 3000);
+    // // Get Clyde out of lair
+    // setTimeout(() => {
+    //   initGhost(ghosts[3]);
+    // }, 3000);
   }
 });
