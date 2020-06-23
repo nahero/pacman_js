@@ -3,6 +3,7 @@
 }
 body {
   background: var(--main-bg-color);
+  color: rgba(200, 200, 230, 0.7);
 }
 
 #grid {
@@ -15,7 +16,8 @@ body {
   z-index: 0;
 }
 
-#grid div {
+/* grid div */
+.g {
   width: 20px;
   height: 20px;
 }
@@ -31,7 +33,7 @@ body {
 
 .wall {
   /* background-color: teal; */
-  background-color: rgba(100, 100, 130, 0.4);
+  background-color: rgba(100, 100, 140, 0.6);
 }
 
 .pac-dot {
@@ -43,7 +45,7 @@ body {
   position: absolute;
   top: 8px;
   left: 8px;
-  background: rgba(200, 200, 230, 0.5);
+  background: rgba(200, 200, 230, 0.8);
   width: 4px;
   height: 4px;
   border-radius: 3px;
@@ -93,7 +95,7 @@ body {
   left: 3px;
   width: 14px;
   height: 14px;
-  background-color: green;
+  background: rgba(200, 200, 230, 0.9);
   border-radius: 8px;
 }
 .pellet--eaten {
@@ -107,7 +109,7 @@ body {
   left: 3px;
   width: 14px;
   height: 14px;
-  background-color: green;
+  background: rgba(200, 200, 230, 0.9);
   border-radius: 8px;
   z-index: 1;
   will-change: transform;
@@ -131,8 +133,10 @@ body {
 #pacman {
   position: absolute;
   z-index: 10;
-  width: 20px;
-  height: 20px;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
   background-color: yellow;
   border: 2px solid darkorange;
   border-radius: 10px;
@@ -157,6 +161,21 @@ body {
 .pacman-deceased {
   background-color: black;
   border-radius: 0 !important;
+}
+
+.target {
+  position: relative;
+}
+.target:after {
+  content: '';
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border: 1px dashed red;
+  box-sizing: border-box;
 }
 
 .allowed-move {
@@ -189,12 +208,14 @@ body {
 .ghost {
   position: absolute;
   z-index: 1;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
+  top: 2px;
+  left: 2px;
   border: 2px solid;
   border-radius: 10px;
   transform-origin: center;
-  will-change: transform filter background-color border-color;
+  will-change: transform, filter, background-color, border-color;
   /* transition: transform 0.2s linear; */
 }
 .ghost.scared {
@@ -202,19 +223,7 @@ body {
   border-color: blue !important;
   /* animation: anim_scaredGhost 0.25s linear 7s alternate 12 both; */
 }
-.ghost.dead {
-  /* border: 3px solid black !important; */
-}
-@keyframes anim_scaredGhost {
-  0% {
-    border-color: lightskyblue;
-    background-color: aqua;
-  }
-  100% {
-    border-color: blue;
-    background-color: aqua;
-  }
-}
+
 .ghost-score {
   position: relative;
   z-index: 1;
@@ -315,7 +324,7 @@ body {
 }
 .perspective #grid {
   transform: rotateX(30deg);
-  perspective: 1200px;
+  /* perspective: 1200px; */
   transform-style: preserve-3d;
   transform-origin: top;
 }

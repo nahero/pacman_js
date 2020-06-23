@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const restartButton = document.getElementById('restartButton');
   restartButton.addEventListener('click', startGame);
 
+  const pacman = {};
   const pacAvatar = document.getElementById('pacman');
   const blinky = document.getElementById('blinky');
   const pinky = document.getElementById('pinky');
@@ -144,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
       grid.appendChild(square);
       // wallGrid.appendChild(square);
       squares.push(square);
+      squares[i].classList.add('g');
       // walls.push(square);
 
       switch (layout[i]) {
@@ -680,6 +682,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return (nextIndex = index + direction.value);
   }
 
+  // RESOLVE TARGET INDEX FOR ANY ACTOR AND FIXED OFFSET (grid spots away)
+  function resolveTargetIndex(actor, direction, offset) {
+    const index = actor === pacman ? pacmanCurrentIndex : actor.currentIndex;
+    const directionValue = offset ? direction.value * offset : direction.value;
+    return (nextIndex = index + directionValue);
+  }
+
   // GET ALLOWED DIRECTIONS based on current index
   function getAllowedDirections(ghost) {
     // console.log('getAllowedDirections', ghost.name);
@@ -782,6 +791,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let pacGhostTimeout = setTimeout(pacmanGhostEncounterCheck(ghost), 100);
   }
 
+  // GHOST MOVEMENT
   function ghostMovement(ghost) {
     const currentGridSpotClass = squares[ghost.currentIndex].classList;
 
@@ -839,7 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function startGhostMovement(ghost) {
     if (!ghost.isRespawning) {
       // ghostMovement(ghost);
-      ghostMoveToPath(ghosts[0]);
+      chaseTarget(ghost, pacman, 2);
       ghost.timerId = setTimeout(startGhostMovement, ghost.speed, ghost);
     }
   }
@@ -916,41 +926,78 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // FIND PATH
-  function ghostMoveToPath(ghost) {
-    const ghostCoords = getGridCoordinates(ghost.currentIndex);
-    const pacmanCoords = getGridCoordinates(pacmanCurrentIndex);
-    const ghostX = ghostCoords[0];
-    const ghostY = ghostCoords[1];
-    const pacX = pacmanCoords[0];
-    const pacY = pacmanCoords[1];
+  function chaseTarget(ghost, target, pattern) {
+    /*
+    patterns:
+    1 - CHASE: target pacman directly
+    2 - CUTOFF: target 3 spots in front of pacman (move to eat if 3 or closer)
+    3 - CONTAIN: move towards pacman if 8+ spots away, move away if closer
+    4 - INTERCEPT: target spot relative to another actor who is targeting pacman
+    */
+    const startCoords = getGridCoordinates(ghost.currentIndex);
+    const startX = startCoords[0];
+    const startY = startCoords[1];
 
-    easystar.findPath(ghostX, ghostY, pacX, pacY, pathCallback);
+    let targetIndex;
+    let targetCoords;
+    let targetX;
+    let targetY;
 
-    function pathCallback(path) {
-      if (path === null) {
-        console.log('Path was not found.');
-        console.log('Path: ' + path);
-      } else {
-        console.log(
-          'Path was found. The first Point is ' + path[0].x + ' ' + path[0].y
-        );
+    // set target coords according to pattern
+    switch (pattern) {
+      case 1: // chase
+        targetCoords =
+          target === pacman ? getGridCoordinates(pacmanCurrentIndex) : null;
+        break;
+      case 2: // cutoff
+        targetIndex = resolveTargetIndex(pacman, currentDirection, 3);
 
-        // PATH MOVEMENT
-        const nextIndex = getIndex(path[0].x, path[0].y);
-        ghost.currentDirection.nextIndex = nextIndex;
-        moveGhost(ghost);
-
-        // LIGHT THE PATH :)
-        path.forEach((gridSpot) => {
-          let gridIndex = getIndex(gridSpot.x, gridSpot.y);
-          squares[gridIndex].classList.add('allowed-move');
+        if (
+          0 <= targetIndex &&
+          targetIndex <= 768 &&
+          allowedMove(ghost, targetIndex) &&
+          targetIndex != ghost.currentIndex
+        ) {
+          targetCoords = getGridCoordinates(targetIndex);
+          squares[targetIndex].classList.add('target');
           setTimeout(() => {
-            squares[gridIndex].classList.remove('allowed-move');
-          }, ghost.speed - 20);
-        });
-      }
+            squares[targetIndex].classList.remove('target');
+          }, 1000);
+        } else {
+          console.log('Moving free');
+          ghostMovement(ghost);
+        }
+        // if targetIndex < 0 or >768
+        // if reached targetIndex (no path.x or path.y)
+        break;
     }
-    easystar.calculate();
+
+    if (targetCoords) {
+      targetX = targetCoords[0];
+      targetY = targetCoords[1];
+      easystar.findPath(startX, startY, targetX, targetY, pathCallback);
+
+      function pathCallback(path) {
+        if (path === null) {
+          console.log('Path was not found.');
+        } else {
+          // PATH MOVEMENT
+          const nextIndex = getIndex(path[1].x, path[1].y);
+          ghost.currentDirection.nextIndex = nextIndex;
+          moveGhost(ghost);
+
+          // LIGHT UP THE PATH :)
+          // path.forEach((gridSpot) => {
+          //   let gridIndex = getIndex(gridSpot.x, gridSpot.y);
+          //   squares[gridIndex].classList.add('allowed-move');
+          //   setTimeout(() => {
+          //     squares[gridIndex].classList.remove('allowed-move');
+          //   }, ghost.speed - 10);
+          // });
+        }
+      }
+      easystar.calculate();
+    }
   }
 
   // KILL GHOST
@@ -964,7 +1011,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ghost.currentIndex = null;
     // change avatar
     ghost.avatar.classList.remove('scared');
-    ghost.avatar.classList.add('dead');
+    // ghost.avatar.classList.add('dead');
 
     // update score
     score += 100;
@@ -1122,9 +1169,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initGhost(ghosts[0]);
 
     // Get Pinky out of lair
-    // setTimeout(() => {
-    //   initGhost(ghosts[1]);
-    // }, 1000);
+    setTimeout(() => {
+      initGhost(ghosts[1]);
+    }, 1000);
 
     // // Get Inky out of lair
     // setTimeout(() => {
