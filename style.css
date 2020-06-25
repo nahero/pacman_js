@@ -174,8 +174,14 @@ body {
   left: 0;
   width: 20px;
   height: 20px;
-  border: 1px dashed red;
+  border: 1px solid;
   box-sizing: border-box;
+}
+.target.blinky:after {
+  border-color: red;
+}
+.target.pinky:after {
+  border-color: pink;
 }
 
 .allowed-move {

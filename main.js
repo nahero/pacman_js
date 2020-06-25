@@ -138,6 +138,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const walls = [];
   let tempIntersections = 0;
 
+  const scatterTargets = {
+    topLeft: 29,
+    topRight: 54,
+    bottomLeft: 729,
+    bottomRight: 754,
+  };
+
   // CREATE BOARD FROM LAYOUT
   function createBoard() {
     for (let i = 0; i < layout.length; i++) {
@@ -197,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // GHOSTS
   class Ghost {
-    constructor(name, startIndex) {
+    constructor(name, startIndex, scatterTarget, pattern) {
       this.name = name;
       this.startIndex = startIndex;
       this.currentIndex = startIndex;
@@ -210,6 +217,12 @@ document.addEventListener('DOMContentLoaded', () => {
       this.isScared = false;
       this.isRespawning = true;
       this.avatar = null;
+      // patterns: 1 - direct, 2 - cutoff, 3 - contain, 4 - intercept
+      this.pattern = pattern || 0; // movement pattern
+      // behaviours: 1 - wandering, 2 - scatter, 3 - chase
+      this.behaviour = 1;
+      // scatter targets
+      this.scatterTarget = scatterTarget;
     }
   }
 
@@ -848,8 +861,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // MAIN MOVE GHOST FUNCTION
   function startGhostMovement(ghost) {
     if (!ghost.isRespawning) {
-      // ghostMovement(ghost);
-      chaseTarget(ghost, pacman, 2);
+      behaviourTrigger();
+      switch (ghost.behaviour) {
+        case 1: // wandering
+          ghostMovement(ghost);
+          console.log('Wandering...');
+          break;
+        case 2: // scatter
+          // target is ghost.scatterTarget, pattern is 1 - move direct to target
+          chaseTarget(ghost, ghost.scatterTarget, 1);
+          console.log('Scattering...');
+          break;
+        case 3: // chase
+          chaseTarget(ghost, pacman, ghost.pattern);
+          console.log('CHASE!');
+          break;
+
+        default:
+          // wandering
+          ghostMovement(ghost);
+          break;
+      }
       ghost.timerId = setTimeout(startGhostMovement, ghost.speed, ghost);
     }
   }
@@ -929,7 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function chaseTarget(ghost, target, pattern) {
     /*
     patterns:
-    1 - CHASE: target pacman directly
+    1 - DIRECT: target pacman directly
     2 - CUTOFF: target 3 spots in front of pacman (move to eat if 3 or closer)
     3 - CONTAIN: move towards pacman if 8+ spots away, move away if closer
     4 - INTERCEPT: target spot relative to another actor who is targeting pacman
@@ -943,11 +975,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let targetX;
     let targetY;
 
+    let movePattern = pattern || ghost.pattern;
+
     // set target coords according to pattern
-    switch (pattern) {
-      case 1: // chase
+    switch (movePattern) {
+      case 1: // direct
         targetCoords =
-          target === pacman ? getGridCoordinates(pacmanCurrentIndex) : null;
+          target === pacman
+            ? getGridCoordinates(pacmanCurrentIndex)
+            : getGridCoordinates(target);
         break;
       case 2: // cutoff
         targetIndex = resolveTargetIndex(pacman, currentDirection, 3);
@@ -959,10 +995,10 @@ document.addEventListener('DOMContentLoaded', () => {
           targetIndex != ghost.currentIndex
         ) {
           targetCoords = getGridCoordinates(targetIndex);
-          squares[targetIndex].classList.add('target');
+          squares[targetIndex].classList.add('target', ghost.name);
           setTimeout(() => {
-            squares[targetIndex].classList.remove('target');
-          }, 1000);
+            squares[targetIndex].classList.remove('target', ghost.name);
+          }, 400);
         } else {
           console.log('Moving free');
           ghostMovement(ghost);
@@ -999,6 +1035,41 @@ document.addEventListener('DOMContentLoaded', () => {
       easystar.calculate();
     }
   }
+
+  // BEHAVIOUR TRIGGER
+  function behaviourTrigger() {
+    // switch behaviours by pacdots remaining, max = 234
+    if (pacdotNumber >= 200) {
+      ghosts.forEach((ghost) => {
+        ghost.behaviour = 1; // wandering
+      });
+    } else if (pacdotNumber < 200 && pacdotNumber >= 150) {
+      ghosts.forEach((ghost) => {
+        ghost.behaviour = 3; // chase
+      });
+    } else if (pacdotNumber < 150 && pacdotNumber >= 100) {
+      ghosts.forEach((ghost) => {
+        ghost.behaviour = 1; // wandering
+      });
+    } else if (pacdotNumber < 100) {
+      ghosts.forEach((ghost) => {
+        ghost.behaviour = 3; // chase
+      });
+    }
+  }
+
+  /*
+  1 if behaviour = chase -> chaseTarget(ghost.pattern)
+  2 if behaviour = scatter -> scatter(ghost.partOfGrid)
+  2a scatter = reach a target (or within few spots), then switch to wandering
+  3 if behaviour = wandering -> random movement (ghostMovement)
+  4 if scared -> set behaviour to wandering + set lower speed
+  
+  behaviours:
+  CHASE: different patterns
+  WANDERING: default ghost movement
+  SCATTER: different parts of grid
+  */
 
   // KILL GHOST
   function killGhost(ghost) {
@@ -1130,11 +1201,11 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     });
     ghosts = [
-      // new Ghost('blinky', 294),
-      new Ghost('blinky', 349),
-      new Ghost('pinky', 348),
-      new Ghost('inky', 350),
-      new Ghost('clyde', 351),
+      // new Ghost('name', startIndex, scatterTarget, pattern)
+      new Ghost('blinky', 349, scatterTargets.topLeft, 1),
+      new Ghost('pinky', 348, scatterTargets.topRight, 2),
+      new Ghost('inky', 350, scatterTargets.bottomLeft, 0),
+      new Ghost('clyde', 351, scatterTargets.bottomRight, 0),
     ];
 
     function initializeGhosts() {
