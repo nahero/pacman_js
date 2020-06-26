@@ -596,6 +596,8 @@ document.addEventListener('DOMContentLoaded', () => {
       scoreDisplay.innerText = score;
       pacdotNumber--;
       pacdotDisplay.innerText = pacdotNumber;
+      // change ghost behaviour based on pacdotNumber
+      pacdotBehaviourTrigger();
       if (pacdotNumber === 0) {
         victory();
       }
@@ -624,6 +626,12 @@ document.addEventListener('DOMContentLoaded', () => {
     scaredModifier = status;
     // change speed (lower is faster)
     tempGhostSpeed = status ? ghostScaredSpeed : ghostDefaultSpeed;
+    // when scared -> ghost.behaviour = wandering
+    if (status) {
+      ghosts.forEach((ghost) => {
+        ghost.behaviour = 1; // wandering
+      });
+    }
     // toggle scared class and transition speed
     ghosts.forEach((ghost) => {
       ghost.isScared = ghost.isRespawning ? false : status;
@@ -861,7 +869,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // MAIN MOVE GHOST FUNCTION
   function startGhostMovement(ghost) {
     if (!ghost.isRespawning) {
-      behaviourTrigger();
       switch (ghost.behaviour) {
         case 1: // wandering
           ghostMovement(ghost);
@@ -998,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', () => {
           squares[targetIndex].classList.add('target', ghost.name);
           setTimeout(() => {
             squares[targetIndex].classList.remove('target', ghost.name);
-          }, 400);
+          }, 200);
         } else {
           console.log('Moving free');
           ghostMovement(ghost);
@@ -1037,25 +1044,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // BEHAVIOUR TRIGGER
-  function behaviourTrigger() {
+  function pacdotBehaviourTrigger() {
     // switch behaviours by pacdots remaining, max = 234
-    if (pacdotNumber >= 200) {
-      ghosts.forEach((ghost) => {
-        ghost.behaviour = 1; // wandering
-      });
-    } else if (pacdotNumber < 200 && pacdotNumber >= 150) {
-      ghosts.forEach((ghost) => {
-        ghost.behaviour = 3; // chase
-      });
-    } else if (pacdotNumber < 150 && pacdotNumber >= 100) {
-      ghosts.forEach((ghost) => {
-        ghost.behaviour = 1; // wandering
-      });
-    } else if (pacdotNumber < 100) {
-      ghosts.forEach((ghost) => {
-        ghost.behaviour = 3; // chase
-      });
-    }
+    let newBehaviour =
+      pacdotNumber >= 200 || (pacdotNumber < 150 && pacdotNumber >= 100)
+        ? 1
+        : 3;
+
+    ghosts.forEach((ghost) => {
+      ghost.behaviour = ghost.isScared ? ghost.behaviour : newBehaviour; // wandering
+    });
   }
 
   /*
@@ -1204,8 +1202,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // new Ghost('name', startIndex, scatterTarget, pattern)
       new Ghost('blinky', 349, scatterTargets.topLeft, 1),
       new Ghost('pinky', 348, scatterTargets.topRight, 2),
-      new Ghost('inky', 350, scatterTargets.bottomLeft, 0),
-      new Ghost('clyde', 351, scatterTargets.bottomRight, 0),
+      new Ghost('inky', 350, scatterTargets.bottomLeft, 1),
+      new Ghost('clyde', 351, scatterTargets.bottomRight, 2),
     ];
 
     function initializeGhosts() {
@@ -1244,14 +1242,14 @@ document.addEventListener('DOMContentLoaded', () => {
       initGhost(ghosts[1]);
     }, 1000);
 
-    // // Get Inky out of lair
-    // setTimeout(() => {
-    //   initGhost(ghosts[2]);
-    // }, 2000);
+    // Get Inky out of lair
+    setTimeout(() => {
+      initGhost(ghosts[2]);
+    }, 2000);
 
-    // // Get Clyde out of lair
-    // setTimeout(() => {
-    //   initGhost(ghosts[3]);
-    // }, 3000);
+    // Get Clyde out of lair
+    setTimeout(() => {
+      initGhost(ghosts[3]);
+    }, 3000);
   }
 });
